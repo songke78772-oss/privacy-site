@@ -1,7 +1,14 @@
 {
   "name": "emberlink",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "dependencies": { "express": "^4.21.0" }
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "better-sqlite3": "^11.3.0",
+    "nanoid": "^5.0.7",
+    "multer": "^1.4.5-lts.1"
+  }
 }
