@@ -19,7 +19,7 @@
       const keyBase64 = location.hash.slice(1);
       if (!id || !keyBase64) return document.getElementById('content').textContent = 'Invalid link';
 
-      const res = await fetch(`/api/read/${id}`, { method: 'POST' });
+      const res = await fetch(`/emberlink/api/read/${id}`, { method: 'POST' });
       const data = await res.json();
       if (data.error) return document.getElementById('content').textContent = data.error;
 
