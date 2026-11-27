@@ -36,14 +36,14 @@ const tools = [
     id: 'emberlink',
     name: 'EmberLink',
     description: 'Share a message that self-destructs after reading. Encrypted in your browser.',
-    url: 'http://localhost:3002',
+    url: '/emberlink/',
     icon: '🔥'
   },
   {
     id: 'keydrop',
     name: 'KeyDrop',
     description: 'Encrypt a file in your browser. The key never leaves your device.',
-    url: 'http://localhost:3003',
+    url: '/keydrop/',
     icon: '🔑'
   }
 ];
