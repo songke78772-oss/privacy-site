@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmberLink – ProToolNest Privacy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <nav class="bg-white border-b">
+    <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="http://localhost:3001" class="flex items-center gap-2">
+        <span class="text-lg font-semibold">EmberLink</span>
+      </a>
+      <a href="http://localhost:3001" class="text-sm text-gray-600">← Back</a>
+    </div>
+  </nav>
+  <main class="max-w-2xl mx-auto px-4 py-10">
+    <h1 class="text-2xl font-bold mb-2">EmberLink</h1>
+    <p class="text-gray-600 mb-6">Share a message that can only be viewed once. Encrypted in your browser.</p>
+    <div class="bg-white border rounded-xl p-6">
+      <textarea id="secret" rows="5" class="w-full border rounded p-3 mb-4" placeholder="Enter your message..."></textarea>
+      <button id="create" class="bg-blue-600 text-white px-5 py-2 rounded">Create Link</button>
+      <div id="result" class="hidden mt-4">
+        <p class="text-sm text-green-600 mb-2">Link created (demo only):</p>
+        <input id="link" readonly class="w-full border rounded px-3 py-2 text-sm bg-gray-50">
+      </div>
+    </div>
+    <p class="text-xs text-gray-400 mt-6">This is a placeholder. Real encryption will be added next.</p>
+  </main>
+  <script>
+    document.getElementById('create').onclick = () => {
+      const text = document.getElementById('secret').value;
+      if (!text) return alert('Please enter a message');
+      document.getElementById('link').value = location.origin + '/view/' + Math.random().toString(36).slice(2);
+      document.getElementById('result').classList.remove('hidden');
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProToolNest Privacy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <nav class="bg-white border-b">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/images/logo.png" alt="ProToolNest" class="h-8">
+        <span class="text-lg font-semibold text-gray-800">ProToolNest Privacy</span>
+      </a>
+      <div class="text-sm">
+        <% if (loggedIn) { %>
+          <span class="text-gray-600 mr-3"><%= email %></span>
+          <a href="/logout" class="text-gray-600 hover:text-gray-800">Logout</a>
+        <% } else { %>
+          <a href="/login" class="text-gray-600 hover:text-gray-800 mr-3">Login</a>
+          <a href="/register" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">Sign Up</a>
+        <% } %>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-4 py-12">
+    <div class="text-center mb-12">
+      <h1 class="text-3xl font-bold text-gray-800 mb-3">Privacy Tools</h1>
+      <p class="text-gray-600">Encryption happens in your browser. The server never sees your data.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <% tools.forEach(tool => { %>
+        <a href="<%= tool.url %>" target="_blank" class="block bg-white border rounded-xl p-6 hover:shadow-md transition">
+          <div class="text-3xl mb-3"><%= tool.icon %></div>
+          <h2 class="text-xl font-semibold text-gray-800 mb-2"><%= tool.name %></h2>
+          <p class="text-gray-600 text-sm"><%= tool.description %></p>
+        </a>
+      <% }) %>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KeyDrop – ProToolNest Privacy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <nav class="bg-white border-b">
+    <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+      <span class="text-lg font-semibold">KeyDrop</span>
+      <a href="http://localhost:3001" class="text-sm text-gray-600">← Back</a>
+    </div>
+  </nav>
+  <main class="max-w-2xl mx-auto px-4 py-10">
+    <h1 class="text-2xl font-bold mb-2">KeyDrop</h1>
+    <p class="text-gray-600 mb-6">Encrypt a file in your browser. The key never leaves your device.</p>
+    <div class="bg-white border rounded-xl p-6">
+      <input type="file" id="file" class="mb-4">
+      <button id="encrypt" class="bg-blue-600 text-white px-5 py-2 rounded" disabled>Encrypt & Generate Key</button>
+      <div id="result" class="hidden mt-6 space-y-3">
+        <div>
+          <label class="text-sm font-medium">Encryption Key</label>
+          <input id="key" readonly class="w-full border rounded px-3 py-2 font-mono text-sm bg-gray-50 mt-1">
+        </div>
+        <button class="bg-green-600 text-white px-5 py-2 rounded text-sm">Download Encrypted File</button>
+      </div>
+    </div>
+    <p class="text-xs text-gray-400 mt-6">This is a placeholder. Real client-side encryption will be added next.</p>
+  </main>
+  <script>
+    const fileInput = document.getElementById('file');
+    const btn = document.getElementById('encrypt');
+    fileInput.onchange = () => btn.disabled = !fileInput.files.length;
+    btn.onclick = () => {
+      document.getElementById('key').value = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2,'0')).join('');
+      document.getElementById('result').classList.remove('hidden');
+    };
+  </script>
+</body>
+</html>
