@@ -32,21 +32,46 @@
       display: flex;
       gap: 20px;
       flex-wrap: wrap;
-      margin: 20px 0;
-      align-items: flex-end;
+      margin: 24px 0 16px 0;
+      align-items: flex-start;
     }
-    .option { flex: 1; min-width: 180px; }
-    .option label { display: block; font-size: 14px; color: #475569; margin-bottom: 6px; }
+    .option {
+      flex: 1;
+      min-width: 180px;
+      display: flex;
+      flex-direction: column;
+    }
+    .option label {
+      display: block;
+      font-size: 14px;
+      color: #475569;
+      margin-bottom: 6px;
+      height: 20px;
+    }
     .option input, .option select {
       width: 100%;
       padding: 10px 12px;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
       font-size: 14px;
+      height: 42px;
     }
-    .option input:focus, .option select:focus { outline: none; border-color: #2563eb; }
-    .strength { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 6px; overflow: hidden; }
-    .strength-bar { height: 100%; width: 0%; transition: width 0.2s, background 0.2s; }
+    .option input:focus, .option select:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+    .strength {
+      height: 4px;
+      background: #e2e8f0;
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .strength-bar {
+      height: 100%;
+      width: 0%;
+      transition: width 0.2s, background 0.2s;
+    }
     #createBtn {
       background: #2563eb;
       color: white;
@@ -57,6 +82,7 @@
       cursor: pointer;
       font-weight: 500;
       transition: background 0.2s;
+      margin-top: 8px;
     }
     #createBtn:hover { background: #1d4ed8; }
     #createBtn.success { background: #10b981; }
@@ -124,19 +150,19 @@
     <div id="result" class="result"></div>
 
     <div class="help">
-  <strong>How to use</strong><br>
-  Write your message, optionally set a password and expiration, then click Create Link. The link contains the decryption key after the # symbol — keep it private.<br><br>
-  <strong style="color:#dc2626;">Privacy Notice</strong><br>
-  <span style="color:#dc2626;">
-    We do not save any of your information. The message is encrypted in your browser before being sent.<br>
-    After you close this page, the content cannot be retrieved from our side.<br>
-  </span><br><br>
-  <strong>Limitations</strong><br>
-  • Images must be smaller than 500KB<br>
-  • Message is encrypted in your browser before being sent<br>
-  • After the maximum views are reached, the message is permanently deleted<br>
-  • We have implemented technical measures to prevent preview bots (such as Slack, Discord, etc.) from accessing the content, but due to ongoing technological progress, we cannot guarantee 100% prevention.
-</div>
+      <strong>How to use</strong><br>
+      Write your message, optionally set a password and expiration, then click Create Link. The link contains the decryption key after the # symbol — keep it private.<br><br>
+      <strong style="color:#dc2626;">Privacy Notice</strong><br>
+      <span style="color:#dc2626;">
+        We do not save any of your information. The message is encrypted in your browser before being sent.<br>
+        After you close this page, the content cannot be retrieved from our side.<br>
+      </span><br><br>
+      <strong>Limitations</strong><br>
+      • Images must be smaller than 500KB<br>
+      • Message is encrypted in your browser before being sent<br>
+      • After the maximum views are reached, the message is permanently deleted<br>
+      • We have implemented technical measures to prevent preview bots (such as Slack, Discord, etc.) from accessing the content, but due to ongoing technological progress, we cannot guarantee 100% prevention.
+    </div>
   </div>
 
   <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
