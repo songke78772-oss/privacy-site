@@ -23,7 +23,10 @@
       const data = await res.json();
       if (data.error) return document.getElementById('content').textContent = data.error;
 
-      if (data.preview) return document.getElementById('content').textContent = 'Preview blocked';
+      if (data.preview) {
+        document.getElementById('content').innerHTML = '<p style="color:#64748b;">Link preview is disabled for privacy.</p>';
+        return;
+      }
 
       let password = '';
       if (data.hasPassword) {
