@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EmberLink</title>
   <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
       background: #f8fafc;
       margin: 0;
-      padding: 40px 20px;
+      padding: 20px;
       color: #1e293b;
     }
     .container {
@@ -21,57 +23,31 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.06);
       padding: 32px;
     }
-    h1 {
-      margin: 0 0 8px 0;
-      color: #2563eb;
-      font-size: 28px;
-    }
-    .subtitle {
-      color: #64748b;
-      margin-bottom: 24px;
-    }
-    #editor {
-      height: 280px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-    }
-    .ql-toolbar {
-      border-radius: 8px 8px 0 0;
-      background: #f1f5f9;
-    }
-    .ql-container {
-      border-radius: 0 0 8px 8px;
-    }
+    h1 { margin: 0 0 8px 0; color: #2563eb; font-size: 28px; }
+    .subtitle { color: #64748b; margin-bottom: 24px; }
+    #editor { height: 280px; margin-bottom: 20px; }
+    .ql-toolbar { border-radius: 8px 8px 0 0; background: #f1f5f9; }
+    .ql-container { border-radius: 0 0 8px 8px; }
     .options {
       display: flex;
       gap: 20px;
       flex-wrap: wrap;
       margin: 20px 0;
-      align-items: end;
+      align-items: flex-end;
     }
-    .option {
-      flex: 1;
-      min-width: 180px;
-    }
-    .option label {
-      display: block;
-      font-size: 14px;
-      color: #475569;
-      margin-bottom: 6px;
-    }
+    .option { flex: 1; min-width: 180px; }
+    .option label { display: block; font-size: 14px; color: #475569; margin-bottom: 6px; }
     .option input, .option select {
       width: 100%;
       padding: 10px 12px;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
       font-size: 14px;
-      background: white;
     }
-    .option input:focus, .option select:focus {
-      outline: none;
-      border-color: #2563eb;
-    }
-    button {
+    .option input:focus, .option select:focus { outline: none; border-color: #2563eb; }
+    .strength { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+    .strength-bar { height: 100%; width: 0%; transition: width 0.2s, background 0.2s; }
+    #createBtn {
       background: #2563eb;
       color: white;
       border: none;
@@ -80,8 +56,10 @@
       font-size: 15px;
       cursor: pointer;
       font-weight: 500;
+      transition: background 0.2s;
     }
-    button:hover { background: #1d4ed8; }
+    #createBtn:hover { background: #1d4ed8; }
+    #createBtn.success { background: #10b981; }
     .result {
       margin-top: 20px;
       padding: 16px;
@@ -91,6 +69,7 @@
       word-break: break-all;
       display: none;
     }
+    .qr { margin-top: 12px; text-align: center; }
     .help {
       margin-top: 32px;
       padding-top: 20px;
@@ -100,6 +79,12 @@
       line-height: 1.6;
     }
     .help strong { color: #475569; }
+    @media (max-width: 640px) {
+      .container { padding: 20px; }
+      .options { flex-direction: column; }
+      .option { min-width: 100%; }
+      #editor { height: 220px; }
+    }
   </style>
 </head>
 <body>
@@ -112,7 +97,8 @@
     <div class="options">
       <div class="option">
         <label>Password (optional)</label>
-        <input type="password" id="password" placeholder="Leave empty for no password">
+        <input type="password" id="password" placeholder="Leave empty for no password" oninput="checkStrength()">
+        <div class="strength"><div class="strength-bar" id="strengthBar"></div></div>
       </div>
       <div class="option">
         <label>Expires in</label>
@@ -133,31 +119,29 @@
       </div>
     </div>
 
-    <button onclick="createLink()">Create Link</button>
+    <button id="createBtn" onclick="createLink()">Create Link</button>
 
     <div id="result" class="result"></div>
 
     <div class="help">
-      <strong>How to use</strong><br>
-      Write your message, optionally set a password and expiration, then click Create Link. The link contains the decryption key after the # symbol — keep it private.<br><br>
-      <strong>Limitations</strong><br>
-• Images must be smaller than 500KB<br>
-• Message is encrypted in your browser before being sent<br>
-• After the maximum views are reached, the message is permanently deleted<br>
-• We have implemented technical measures to prevent preview bots (such as Slack, Discord, etc.) from accessing the content, but due to ongoing technological progress, we cannot guarantee 100% prevention.
-    </div>
+  <strong>How to use</strong><br>
+  Write your message, optionally set a password and expiration, then click Create Link. The link contains the decryption key after the # symbol — keep it private.<br><br>
+  <strong style="color:#dc2626;">Privacy Notice</strong><br>
+  <span style="color:#dc2626;">
+    We do not save any of your information. The message is encrypted in your browser before being sent.<br>
+    After you close this page, the content cannot be retrieved from our side.<br>
+    Once the maximum number of views is reached or the link expires, the encrypted data is permanently deleted from the server and cannot be recovered.
+  </span><br><br>
+  <strong>Limitations</strong><br>
+  • Images must be smaller than 500KB<br>
+  • Message is encrypted in your browser before being sent<br>
+  • After the maximum views are reached, the message is permanently deleted<br>
+  • We have implemented technical measures to prevent preview bots (such as Slack, Discord, etc.) from accessing the content, but due to ongoing technological progress, we cannot guarantee 100% prevention.
+</div>
   </div>
 
   <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
   <script>
-    function copyLink(link) {
-      navigator.clipboard.writeText(link).then(() => {
-        alert('Link copied!');
-      }).catch(() => {
-        prompt('Copy this link:', link);
-      });
-    }
-    
     const quill = new Quill('#editor', {
       theme: 'snow',
       modules: {
@@ -168,7 +152,7 @@
           ['clean']
         ]
       },
-      placeholder: 'Please enter your content; it will not be lost if you refresh the page...'
+      placeholder: 'Write your secret message...'
     });
 
     quill.getModule('toolbar').addHandler('image', () => {
@@ -192,9 +176,28 @@
       };
     });
 
+    function checkStrength() {
+      const pwd = document.getElementById('password').value;
+      const bar = document.getElementById('strengthBar');
+      let score = 0;
+      if (pwd.length >= 6) score++;
+      if (pwd.length >= 10) score++;
+      if (/[0-9]/.test(pwd)) score++;
+      if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
+      if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+      const widths = ['0%', '25%', '50%', '75%', '100%'];
+      const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a'];
+      bar.style.width = widths[Math.min(score, 4)];
+      bar.style.background = colors[Math.min(score, 4)];
+    }
+
     async function createLink() {
       const html = quill.root.innerHTML;
       if (!html || html === '<p><br></p>') return alert('Please enter some content');
+
+      const btn = document.getElementById('createBtn');
+      btn.disabled = true;
+      btn.textContent = 'Creating...';
 
       const password = document.getElementById('password').value;
       const expiresInHours = parseInt(document.getElementById('expires').value) || null;
@@ -241,8 +244,31 @@
       result.innerHTML = `
         <strong>Link created:</strong><br>
         <a href="${link}" target="_blank">${link}</a>
-        <button onclick="copyLink('${link}')" style="margin-left:12px;padding:6px 14px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;">Copy</button>
+        <button onclick="copyLink(this, '${link}')" style="margin-left:12px;padding:6px 14px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;">Copy</button>
+        <div class="qr" id="qrcode"></div>
       `;
+
+      QRCode.toCanvas(document.getElementById('qrcode'), link, { width: 180 }, function (error) {
+        if (error) console.error(error);
+      });
+
+      btn.textContent = 'Copied!';
+      btn.classList.add('success');
+      setTimeout(() => {
+        btn.textContent = 'Create Link';
+        btn.classList.remove('success');
+        btn.disabled = false;
+      }, 2000);
+
+      navigator.clipboard.writeText(link).catch(() => {});
+    }
+
+    function copyLink(btn, link) {
+      navigator.clipboard.writeText(link).then(() => {
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = original, 1500);
+      });
     }
   </script>
 </body>
