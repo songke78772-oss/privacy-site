@@ -266,14 +266,14 @@
 
       const result = document.getElementById('result');
       result.style.display = 'block';
-      result.innerHTML = `
+       result.innerHTML = `
         <strong>Link created:</strong><br>
         <a href="${link}" target="_blank">${link}</a>
         <button onclick="copyLink(this, '${link}')" style="margin-left:12px;padding:6px 14px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;">Copy</button>
-        <div class="qr" id="qrcode"></div>
+        <div class="qr"><canvas id="qrcode"></canvas></div>
       `;
-
-      QRCode.toCanvas(document.getElementById('qrcode'), link, { width: 180 }, function (error) {
+      
+      QRCode.toCanvas(document.getElementById('qrcode'), link, { width: 180, margin: 1 }, function (error) {
         if (error) console.error(error);
       });
 
