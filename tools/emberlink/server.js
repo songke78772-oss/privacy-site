@@ -46,7 +46,8 @@ app.post('/api/create', (req, res) => {
 app.post('/api/read/:id', (req, res) => {
   const ua = req.get('User-Agent') || '';
   // 简单防预览
-  if (/bot|crawler|spider|preview|slack|discord|whatsapp|telegram|facebook|twitter/i.test(ua)) {
+  const bots = ['bot', 'crawler', 'spider', 'preview', 'slack', 'discord', 'whatsapp', 'telegram', 'facebook', 'twitter', 'linkedin', 'skype', 'teams', 'zoom'];
+  if (bots.some(b => ua.toLowerCase().includes(b))) {
     return res.json({ preview: true });
   }
 
