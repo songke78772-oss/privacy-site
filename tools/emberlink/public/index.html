@@ -150,6 +150,14 @@
 
   <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
   <script>
+    function copyLink(link) {
+      navigator.clipboard.writeText(link).then(() => {
+        alert('Link copied!');
+      }).catch(() => {
+        prompt('Copy this link:', link);
+      });
+    }
+    
     const quill = new Quill('#editor', {
       theme: 'snow',
       modules: {
@@ -230,7 +238,11 @@
 
       const result = document.getElementById('result');
       result.style.display = 'block';
-      result.innerHTML = `<strong>Link created:</strong><br><a href="${link}" target="_blank">${link}</a>`;
+      result.innerHTML = `
+        <strong>Link created:</strong><br>
+        <a href="${link}" target="_blank">${link}</a>
+        <button onclick="copyLink('${link}')" style="margin-left:12px;padding:6px 14px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;">Copy</button>
+      `;
     }
   </script>
 </body>
