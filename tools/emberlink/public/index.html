@@ -210,7 +210,7 @@
       const ivBase64 = btoa(String.fromCharCode(...iv));
       const saltBase64 = salt ? btoa(String.fromCharCode(...salt)) : null;
 
-      const res = await fetch('/api/create', {
+      const res = await fetch('/emberlink/api/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
