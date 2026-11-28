@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const BASE_PATH = process.env.BASE_PATH || '/burn-chat';
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3005;
 
 const app = express();
 const server = http.createServer(app);
