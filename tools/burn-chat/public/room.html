@@ -69,6 +69,14 @@
           Paste Image
           <input type="file" id="boardImageInput" accept="image/*" class="hidden">
         </label>
+        <div class="flex items-center gap-1">
+          <span class="text-gray-500">Flags:</span>
+          <button class="flag-btn text-lg" data-color="#ef4444" title="Red flag">🚩</button>
+          <button class="flag-btn text-lg" data-color="#3b82f6" title="Blue flag">🚩</button>
+          <button class="flag-btn text-lg" data-color="#22c55e" title="Green flag">🚩</button>
+          <button class="flag-btn text-lg" data-color="#f59e0b" title="Yellow flag">🚩</button>
+          <button class="flag-btn text-lg" data-color="#a855f7" title="Purple flag">🚩</button>
+        </div>
         <button id="clearBoard" class="px-3 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200">Clear All</button>
       </div>
 
@@ -99,7 +107,6 @@
     let myName = '';
     let expireAt = 0;
 
-    // Join room
     socket.emit('join-room', { roomId, isCreator });
 
     socket.on('joined', (data) => {
@@ -165,7 +172,6 @@
       if (e.key === 'Enter') sendMessage(msgInput.value);
     });
 
-    // Chat image upload (500KB)
     imageInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -179,7 +185,6 @@
       e.target.value = '';
     });
 
-    // Countdown
     function updateCountdown() {
       const left = Math.max(0, expireAt - Date.now());
       const h = Math.floor(left / 3600000);
@@ -202,6 +207,7 @@
     let currentSize = 2;
     let isEraser = false;
     let strokeHistory = [];
+    let flagMode = null;
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -225,6 +231,7 @@
     }
 
     function startDraw(e) {
+      if (flagMode) return;
       drawing = true;
       const rect = canvas.getBoundingClientRect();
       lastX = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
@@ -232,7 +239,7 @@
     }
 
     function draw(e) {
-      if (!drawing) return;
+      if (!drawing || flagMode) return;
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
       const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
@@ -275,7 +282,9 @@
       btn.addEventListener('click', () => {
         currentColor = btn.dataset.color;
         isEraser = false;
+        flagMode = null;
         document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('border-gray-800'));
+        document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('bg-yellow-200'));
         btn.classList.add('border-gray-800');
       });
     });
@@ -290,7 +299,9 @@
 
     document.getElementById('eraserBtn').addEventListener('click', () => {
       isEraser = !isEraser;
+      flagMode = null;
       document.getElementById('eraserBtn').classList.toggle('bg-yellow-200', isEraser);
+      document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('bg-yellow-200'));
     });
 
     document.getElementById('undoBtn').addEventListener('click', () => {
@@ -340,6 +351,45 @@
       e.target.value = '';
     });
 
+    // 插旗子
+    document.querySelectorAll('.flag-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        flagMode = btn.dataset.color;
+        isEraser = false;
+        document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('bg-yellow-200'));
+        btn.classList.add('bg-yellow-200');
+      });
+    });
+
+    canvas.addEventListener('click', (e) => {
+      if (!flagMode) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      drawFlag(x, y, flagMode);
+      socket.emit('whiteboard-flag', { roomId, x, y, color: flagMode });
+      flagMode = null;
+      document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('bg-yellow-200'));
+    });
+
+    function drawFlag(x, y, color) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 22, y - 8);
+      ctx.lineTo(x + 22, y + 8);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y - 12);
+      ctx.lineTo(x, y + 18);
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
     socket.on('whiteboard-draw', (stroke) => {
       ctx.beginPath();
       ctx.moveTo(stroke.fromX, stroke.fromY);
@@ -359,6 +409,10 @@
       const img = new Image();
       img.onload = () => ctx.drawImage(img, x, y, w, h);
       img.src = dataUrl;
+    });
+
+    socket.on('whiteboard-flag', ({ x, y, color }) => {
+      drawFlag(x, y, color);
     });
   </script>
 </body>
