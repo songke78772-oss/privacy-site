@@ -21,6 +21,7 @@ app.get(BASE_PATH, (req, res) => res.sendFile(path.join(__dirname, 'public', 'cr
 app.get(`${BASE_PATH}/`, (req, res) => res.sendFile(path.join(__dirname, 'public', 'create.html')));
 
 const rooms = new Map();
+const boardHistory = new Map(); // 白板历史，所有用户共享
 
 const namePools = {
   animal: ['Lion', 'Tiger', 'Bear', 'Wolf', 'Fox', 'Deer', 'Eagle', 'Owl', 'Rabbit', 'Panda', 'Koala', 'Dolphin'],
@@ -86,6 +87,7 @@ app.post(`${BASE_PATH}/api/create-room`, (req, res) => {
     if (rooms.has(roomId)) {
       io.to(roomId).emit('system', 'Room session has expired; room automatically disbanded.');
       rooms.delete(roomId);
+      boardHistory.delete(roomId);
     }
   }, Number(hours) * 60 * 60 * 1000);
 
@@ -127,54 +129,45 @@ app.get(`${BASE_PATH}/join/:roomId/:token`, (req, res) => {
 
 app.get(`${BASE_PATH}/room/:roomId`, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'room.html'));
-  });
-  
-  io.on('connection', (socket) => {
-  // 简单内存历史（房间解散时自动清空）
-const boardHistory = new Map();
-
-socket.on('whiteboard-draw', (data) => {
-  if (!boardHistory.has(data.roomId)) boardHistory.set(data.roomId, []);
-  boardHistory.get(data.roomId).push(data);
-  socket.to(data.roomId).emit('whiteboard-draw', data);
 });
 
-socket.on('whiteboard-flag', (data) => {
-  if (!boardHistory.has(data.roomId)) boardHistory.set(data.roomId, []);
-  boardHistory.get(data.roomId).push({ type: 'flag', ...data });
-  socket.to(data.roomId).emit('whiteboard-flag', data);
-});
-
-socket.on('whiteboard-clear', (data) => {
-  boardHistory.set(data.roomId, []);
-  socket.to(data.roomId).emit('whiteboard-clear');
-});
-
-socket.on('whiteboard-image', (data) => {
-  socket.to(data.roomId).emit('whiteboard-image', data);
-});
-
-socket.on('request-whiteboard', ({ roomId }) => {
-  const hist = boardHistory.get(roomId) || [];
-  socket.emit('whiteboard-history', hist);
-});
-
-    
-    // 白板画笔
+io.on('connection', (socket) => {
+  // ========== 白板事件（带历史） ==========
   socket.on('whiteboard-draw', (data) => {
+    if (!data || !data.roomId) return;
+    if (!boardHistory.has(data.roomId)) boardHistory.set(data.roomId, []);
+    const stroke = { type: 'stroke', ...data };
+    boardHistory.get(data.roomId).push(stroke);
+    if (boardHistory.get(data.roomId).length > 1000) {
+      boardHistory.get(data.roomId).shift();
+    }
     socket.to(data.roomId).emit('whiteboard-draw', data);
   });
-  
-  // 白板清除
-  socket.on('whiteboard-clear', (data) => {
-    socket.to(data.roomId).emit('whiteboard-clear', data);
+
+  socket.on('whiteboard-flag', (data) => {
+    if (!data || !data.roomId) return;
+    if (!boardHistory.has(data.roomId)) boardHistory.set(data.roomId, []);
+    boardHistory.get(data.roomId).push({ type: 'flag', x: data.x, y: data.y, color: data.color });
+    socket.to(data.roomId).emit('whiteboard-flag', data);
   });
-  
-  // 白板贴图
+
+  socket.on('whiteboard-clear', (data) => {
+    if (!data || !data.roomId) return;
+    boardHistory.set(data.roomId, []);
+    socket.to(data.roomId).emit('whiteboard-clear');
+  });
+
   socket.on('whiteboard-image', (data) => {
+    if (!data || !data.roomId) return;
     socket.to(data.roomId).emit('whiteboard-image', data);
   });
-  
+
+  socket.on('request-whiteboard', ({ roomId }) => {
+    const hist = boardHistory.get(roomId) || [];
+    socket.emit('whiteboard-history', hist);
+  });
+
+  // ========== 原有房间逻辑 ==========
   socket.on('join-room', ({ roomId, isCreator, name }) => {
     const room = rooms.get(roomId);
     if (!room || room.dissolved) {
@@ -224,20 +217,13 @@ socket.on('request-whiteboard', ({ roomId }) => {
     io.to(roomId).emit('message', msg);
   });
 
-  socket.on('whiteboard-draw', (data) => {
-    socket.to(data.roomId).emit('whiteboard-draw', data);
-  });
-
-  socket.on('whiteboard-clear', (data) => {
-    socket.to(data.roomId).emit('whiteboard-clear');
-  });
-
   socket.on('dissolve', ({ roomId }) => {
     const room = rooms.get(roomId);
     if (room && socket.isCreator) {
       room.dissolved = true;
       io.to(roomId).emit('system', 'The room has been disbanded by its creator.');
       rooms.delete(roomId);
+      boardHistory.delete(roomId);
       io.in(roomId).disconnectSockets();
     }
   });
