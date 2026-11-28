@@ -152,11 +152,24 @@
 
       bubble.appendChild(nameEl);
 
-      if (isImage) {
+     if (isImage) {
         const img = document.createElement('img');
         img.src = text;
-        img.className = 'max-w-full rounded-lg mt-1';
+        img.className = 'max-w-full rounded-lg mt-1 cursor-pointer hover:opacity-90';
         img.style.maxHeight = '200px';
+        img.onclick = () => {
+          const modal = document.createElement('div');
+          modal.className = 'fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4';
+          modal.onclick = () => modal.remove();
+      
+          const full = document.createElement('img');
+          full.src = text;
+          full.className = 'max-w-full max-h-full object-contain';
+          full.onclick = (e) => e.stopPropagation();
+      
+          modal.appendChild(full);
+          document.body.appendChild(modal);
+        };
         bubble.appendChild(img);
       } else {
         const textEl = document.createElement('div');
