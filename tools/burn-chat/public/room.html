@@ -22,9 +22,10 @@
       </div>
       <div id="participants" class="flex flex-wrap gap-2 text-sm"></div>
     </div>
-    <button id="dissolveBtn" class="hidden bg-red-600 text-white text-sm px-3 py-1.5 rounded hover:bg-red-700 self-start sm:self-auto">
-      Dissolve Room
-    </button>
+    <div class="flex gap-2">
+      <button id="whiteboardBtn" class="bg-gray-600 text-white text-sm px-3 py-1.5 rounded hover:bg-gray-700">Whiteboard</button>
+      <button id="dissolveBtn" class="hidden bg-red-600 text-white text-sm px-3 py-1.5 rounded hover:bg-red-700">Dissolve Room</button>
+    </div>
   </header>
 
   <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
@@ -33,9 +34,28 @@
     <form id="msgForm" class="flex gap-2 max-w-4xl mx-auto">
       <input id="msgInput" type="text" placeholder="Type a message..." autocomplete="off"
              class="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+      <label class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-sm cursor-pointer">
+        Image
+        <input type="file" id="imageInput" accept="image/*" class="hidden">
+      </label>
       <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">Send</button>
     </form>
   </footer>
+
+  <!-- Whiteboard Modal -->
+  <div id="whiteboardModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl w-full max-w-4xl h-[80vh] flex flex-col">
+      <div class="flex justify-between items-center p-4 border-b">
+        <h2 class="font-bold">Shared Whiteboard</h2>
+        <button id="closeWhiteboard" class="text-gray-500 hover:text-gray-800">✕</button>
+      </div>
+      <canvas id="whiteboard" class="flex-1 bg-white border-t cursor-crosshair"></canvas>
+      <div class="p-3 border-t flex gap-2">
+        <button id="clearBoard" class="bg-red-100 text-red-600 px-3 py-1 rounded text-sm">Clear</button>
+        <span class="text-xs text-gray-500 self-center">Draw with mouse / touch. Changes are shared in real time.</span>
+      </div>
+    </div>
+  </div>
 
   <script>
     const params = new URLSearchParams(location.search);
@@ -52,6 +72,12 @@
     const timerEl = document.getElementById('timer');
     const dissolveBtn = document.getElementById('dissolveBtn');
     const participantsEl = document.getElementById('participants');
+    const imageInput = document.getElementById('imageInput');
+    const whiteboardBtn = document.getElementById('whiteboardBtn');
+    const whiteboardModal = document.getElementById('whiteboardModal');
+    const closeWhiteboard = document.getElementById('closeWhiteboard');
+    const canvas = document.getElementById('whiteboard');
+    const clearBoard = document.getElementById('clearBoard');
 
     let expireAt = 0;
     let maxPeople = 2;
@@ -59,11 +85,21 @@
     let myName = '';
     const colors = ['#16a34a', '#dc2626', '#9333ea', '#ea580c', '#0891b2', '#be185d', '#4f46e5', '#0d9488'];
 
+    // Whiteboard
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let lastX = 0, lastY = 0;
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
     function getNameColor(name) {
       let hash = 0;
-      for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
-      }
+      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
       const palette = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2', '#be185d', '#0d9488'];
       return palette[Math.abs(hash) % palette.length];
     }
@@ -101,7 +137,7 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    function addMessage(name, text, isMine = false) {
+    function addMessage(name, text, isMine = false, isImage = false) {
       const wrapper = document.createElement('div');
       wrapper.className = 'flex ' + (isMine ? 'justify-end' : 'justify-start');
 
@@ -114,12 +150,21 @@
       nameEl.style.color = isMine ? 'rgba(255,255,255,0.85)' : getNameColor(name);
       nameEl.textContent = name;
 
-      const textEl = document.createElement('div');
-      textEl.className = 'break-words';
-      textEl.textContent = text;
-
       bubble.appendChild(nameEl);
-      bubble.appendChild(textEl);
+
+      if (isImage) {
+        const img = document.createElement('img');
+        img.src = text;
+        img.className = 'max-w-full rounded-lg mt-1';
+        img.style.maxHeight = '200px';
+        bubble.appendChild(img);
+      } else {
+        const textEl = document.createElement('div');
+        textEl.className = 'break-words';
+        textEl.textContent = text;
+        bubble.appendChild(textEl);
+      }
+
       wrapper.appendChild(bubble);
       messagesEl.appendChild(wrapper);
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -138,6 +183,68 @@
       }
     }
     setInterval(updateTimer, 1000);
+
+    // Whiteboard drawing
+    function startDraw(e) {
+      drawing = true;
+      const rect = canvas.getBoundingClientRect();
+      lastX = (e.clientX || e.touches[0].clientX) - rect.left;
+      lastY = (e.clientY || e.touches[0].clientY) - rect.top;
+    }
+    function draw(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX || e.touches[0].clientX) - rect.left;
+      const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      socket.emit('whiteboard-draw', { roomId, fromX: lastX, fromY: lastY, toX: x, toY: y });
+      lastX = x;
+      lastY = y;
+    }
+    function stopDraw() { drawing = false; }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseout', stopDraw);
+    canvas.addEventListener('touchstart', startDraw);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDraw);
+
+    whiteboardBtn.addEventListener('click', () => {
+      whiteboardModal.classList.remove('hidden');
+      setTimeout(resizeCanvas, 50);
+    });
+    closeWhiteboard.addEventListener('click', () => whiteboardModal.classList.add('hidden'));
+    clearBoard.addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      socket.emit('whiteboard-clear', { roomId });
+    });
+
+    // Image upload
+    imageInput.addEventListener('change', () => {
+      const file = imageInput.files[0];
+      if (!file) return;
+      if (file.size > 500 * 1024) {
+        alert('Image must be under 500KB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        socket.emit('message', { roomId, ciphertext: reader.result, isImage: true });
+      };
+      reader.readAsDataURL(file);
+      imageInput.value = '';
+    });
 
     socket.on('connect', () => {
       socket.emit('join-room', { roomId, isCreator, name: creatorName });
@@ -165,11 +272,25 @@
     });
 
     socket.on('history', (msgs) => {
-      msgs.forEach(m => addMessage(m.name, m.ciphertext || '', m.name === myName));
+      msgs.forEach(m => addMessage(m.name, m.ciphertext || '', m.name === myName, m.isImage));
     });
 
     socket.on('message', (m) => {
-      addMessage(m.name, m.ciphertext || '', m.name === myName);
+      addMessage(m.name, m.ciphertext || '', m.name === myName, m.isImage);
+    });
+
+    socket.on('whiteboard-draw', ({ fromX, fromY, toX, toY }) => {
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    });
+
+    socket.on('whiteboard-clear', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
     socket.on('system', (text) => {
@@ -192,7 +313,7 @@
       e.preventDefault();
       const text = msgInput.value.trim();
       if (!text) return;
-      socket.emit('message', { roomId, ciphertext: text });
+      socket.emit('message', { roomId, ciphertext: text, isImage: false });
       msgInput.value = '';
     });
 
