@@ -56,7 +56,6 @@ app.post(`${BASE_PATH}/api/create-room`, (req, res) => {
 
   const roomId = generateId();
   const expireAt = Date.now() + Number(hours) * 60 * 60 * 1000;
-  const usedNames = new Set([creatorName]);
 
   const inviteLinks = [];
   for (let i = 0; i < maxPeople - 1; i++) {
@@ -164,19 +163,28 @@ io.on('connection', (socket) => {
     socket.emit('history', room.messages.slice(-100));
   });
 
-  socket.on('message', ({ roomId, ciphertext }) => {
+  socket.on('message', ({ roomId, ciphertext, isImage }) => {
     const room = rooms.get(roomId);
     if (!room || !room.users.has(socket.id)) return;
 
     const msg = {
       name: room.users.get(socket.id),
       ciphertext,
+      isImage: !!isImage,
       time: Date.now()
     };
     room.messages.push(msg);
     if (room.messages.length > 300) room.messages.shift();
 
     io.to(roomId).emit('message', msg);
+  });
+
+  socket.on('whiteboard-draw', (data) => {
+    socket.to(data.roomId).emit('whiteboard-draw', data);
+  });
+
+  socket.on('whiteboard-clear', (data) => {
+    socket.to(data.roomId).emit('whiteboard-clear');
   });
 
   socket.on('dissolve', ({ roomId }) => {
