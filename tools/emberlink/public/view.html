@@ -4,12 +4,48 @@
   <meta charset="UTF-8">
   <title>EmberLink</title>
   <style>
-    body { font-family: system-ui; max-width: 800px; margin: 40px auto; padding: 0 20px; }
-    .content { border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      max-width: 800px; 
+      margin: 40px auto; 
+      padding: 0 20px; 
+      color: #1e293b;
+    }
+    h1 { color: #2563eb; }
+    .privacy-banner {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 20px 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .privacy-banner strong {
+      color: #dc2626;
+      font-weight: 700;
+    }
+    .content { 
+      border: 1px solid #ddd; 
+      padding: 20px; 
+      border-radius: 8px; 
+      margin-top: 16px;
+    }
+    .burned-notice {
+      color: #666;
+      margin-top: 20px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <h1>EmberLink</h1>
+  
+  <div class="privacy-banner">
+    <strong>100% Client-side Encrypted</strong><br>
+    <strong>The server only stores ciphertext and cannot read the content</strong>
+  </div>
+
   <div id="content">Loading...</div>
 
   <script>
@@ -50,7 +86,10 @@
         const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
         const html = new TextDecoder().decode(decrypted);
 
-        document.getElementById('content').innerHTML = `<div class="content">${html}</div><p style="color:#666;margin-top:20px;">This message has been burned.</p>`;
+        document.getElementById('content').innerHTML = `
+          <div class="content">${html}</div>
+          <p class="burned-notice">This message has been burned.</p>
+        `;
       } catch (e) {
         document.getElementById('content').textContent = 'Decryption failed (wrong password or corrupted)';
       }
