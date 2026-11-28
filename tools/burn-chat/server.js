@@ -130,6 +130,36 @@ app.get(`${BASE_PATH}/room/:roomId`, (req, res) => {
   });
   
   io.on('connection', (socket) => {
+  // 简单内存历史（房间解散时自动清空）
+const boardHistory = new Map();
+
+socket.on('whiteboard-draw', (data) => {
+  if (!boardHistory.has(data.roomId)) boardHistory.set(data.roomId, []);
+  boardHistory.get(data.roomId).push(data);
+  socket.to(data.roomId).emit('whiteboard-draw', data);
+});
+
+socket.on('whiteboard-flag', (data) => {
+  if (!boardHistory.has(data.roomId)) boardHistory.set(data.roomId, []);
+  boardHistory.get(data.roomId).push({ type: 'flag', ...data });
+  socket.to(data.roomId).emit('whiteboard-flag', data);
+});
+
+socket.on('whiteboard-clear', (data) => {
+  boardHistory.set(data.roomId, []);
+  socket.to(data.roomId).emit('whiteboard-clear');
+});
+
+socket.on('whiteboard-image', (data) => {
+  socket.to(data.roomId).emit('whiteboard-image', data);
+});
+
+socket.on('request-whiteboard', ({ roomId }) => {
+  const hist = boardHistory.get(roomId) || [];
+  socket.emit('whiteboard-history', hist);
+});
+
+    
     // 白板画笔
   socket.on('whiteboard-draw', (data) => {
     socket.to(data.roomId).emit('whiteboard-draw', data);
