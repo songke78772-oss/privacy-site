@@ -127,9 +127,24 @@ app.get(`${BASE_PATH}/join/:roomId/:token`, (req, res) => {
 
 app.get(`${BASE_PATH}/room/:roomId`, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'room.html'));
-});
-
-io.on('connection', (socket) => {
+  });
+  
+  io.on('connection', (socket) => {
+    // 白板画笔
+  socket.on('whiteboard-draw', (data) => {
+    socket.to(data.roomId).emit('whiteboard-draw', data);
+  });
+  
+  // 白板清除
+  socket.on('whiteboard-clear', (data) => {
+    socket.to(data.roomId).emit('whiteboard-clear', data);
+  });
+  
+  // 白板贴图
+  socket.on('whiteboard-image', (data) => {
+    socket.to(data.roomId).emit('whiteboard-image', data);
+  });
+  
   socket.on('join-room', ({ roomId, isCreator, name }) => {
     const room = rooms.get(roomId);
     if (!room || room.dissolved) {
