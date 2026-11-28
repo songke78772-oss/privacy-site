@@ -8,13 +8,11 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body class="bg-gray-50 h-screen flex flex-col">
-  <!-- Title -->
   <div class="bg-white border-b px-4 py-4">
     <h1 class="text-2xl font-bold text-blue-600">Burn Chat</h1>
     <p class="text-gray-600 text-sm mt-1">Temporary group chat. Messages disappear when the room ends.</p>
   </div>
 
-  <!-- Header -->
   <header class="bg-white border-b px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-3">
@@ -29,10 +27,8 @@
     </button>
   </header>
 
-  <!-- Messages -->
   <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
 
-  <!-- Input -->
   <footer class="bg-white border-t p-3">
     <form id="msgForm" class="flex gap-2 max-w-4xl mx-auto">
       <input id="msgInput" type="text" placeholder="Type a message..." autocomplete="off"
@@ -58,8 +54,8 @@
     const participantsEl = document.getElementById('participants');
 
     let expireAt = 0;
-    let maxPeople = 5;
-    let slots = []; // { label, joined, color }
+    let maxPeople = 2;
+    let slots = [];
     const colors = ['#16a34a', '#dc2626', '#9333ea', '#ea580c', '#0891b2', '#be185d', '#4f46e5', '#0d9488'];
 
     function renderParticipants() {
@@ -121,23 +117,22 @@
       socket.emit('join-room', { roomId, isCreator, name: creatorName });
     });
 
-    socket.on('joined', ({ name, expireAt: exp, maxPeople: mp, creatorName: cName }) => {
+    socket.on('joined', ({ name, expireAt: exp, maxPeople: mp, creatorName: cName, isCreator: ic }) => {
       expireAt = exp;
       maxPeople = mp || 2;
       const owner = cName || creatorName || 'Owner';
       ownerNameEl.textContent = owner;
       initSlots(owner);
-    
-      // 如果不是房主，把自己的名字填到第一个 Guest 位置
-      if (!isCreator && name && name !== owner) {
+
+      if (!ic && name && name !== owner) {
         const empty = slots.find(s => !s.joined && s.label.startsWith('Guest'));
         if (empty) {
           empty.label = name;
           empty.joined = true;
         }
       }
-    
-      if (isCreator) dissolveBtn.classList.remove('hidden');
+
+      if (ic) dissolveBtn.classList.remove('hidden');
       renderParticipants();
       updateTimer();
     });
@@ -153,9 +148,8 @@
       const joinMatch = text.match(/^(.+) has joined the room$/);
       if (joinMatch) {
         const joinedName = joinMatch[1];
-        // Find first empty guest slot and replace it
         const empty = slots.find(s => !s.joined && s.label.startsWith('Guest'));
-        if (empty) {
+        if (empty && joinedName !== ownerNameEl.textContent) {
           empty.label = joinedName;
           empty.joined = true;
           renderParticipants();
