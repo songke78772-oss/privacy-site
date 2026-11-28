@@ -2,174 +2,121 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Chat Room - ToolNest</title>
+  <title>Burn Chat Room - ToolNest</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/burn-chat/socket.io/socket.io.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
-<body class="bg-gray-100 h-screen flex flex-col">
-  <!-- Header -->
-  <div class="bg-white shadow px-4 py-3 flex justify-between items-center">
-    <div>
-      <span class="font-semibold text-lg" id="myName">...</span>
-      <span class="text-sm text-gray-500 ml-2" id="countdown">--:--:--</span>
+<body class="bg-gray-50 h-screen flex flex-col">
+  <!-- Top bar -->
+  <header class="bg-white border-b px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span id="myName" class="font-semibold text-blue-600">...</span>
+      <span id="timer" class="text-sm text-gray-500 font-mono">--:--:--</span>
     </div>
-    <button id="dissolveBtn" class="hidden text-sm text-red-600 hover:underline">
+    <button id="dissolveBtn" class="hidden bg-red-600 text-white text-sm px-3 py-1 rounded hover:bg-red-700">
       Dissolve Room
     </button>
-  </div>
+  </header>
 
   <!-- Messages -->
-  <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+  <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-2">
+    <!-- messages go here -->
+  </div>
 
   <!-- Input -->
-  <div class="bg-white border-t p-3">
-    <form id="msgForm" class="flex gap-2">
-      <input id="msgInput" type="text" class="flex-1 border rounded px-3 py-2" placeholder="Type a message..." autocomplete="off">
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+  <footer class="bg-white border-t p-3">
+    <form id="msgForm" class="flex gap-2 max-w-4xl mx-auto">
+      <input id="msgInput" type="text" placeholder="Type a message..." autocomplete="off"
+             class="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
         Send
       </button>
     </form>
-  </div>
+  </footer>
 
   <script>
-    const socket = io({ path: '/burn-chat/socket.io' });
-    const params = new URLSearchParams(window.location.search);
-    const roomId = window.location.pathname.split('/')[3];
+    const params = new URLSearchParams(location.search);
+    const pathParts = location.pathname.split('/');
+    const roomId = pathParts[pathParts.length - 1];
     const isCreator = params.get('creator') === '1';
     const creatorName = params.get('name') || '';
 
+    const socket = io({ path: '/burn-chat/socket.io' });
+
+    const messagesEl = document.getElementById('messages');
+    const msgInput = document.getElementById('msgInput');
+    const myNameEl = document.getElementById('myName');
+    const timerEl = document.getElementById('timer');
+    const dissolveBtn = document.getElementById('dissolveBtn');
+
     let myName = '';
     let expireAt = 0;
-    let password = null;
 
-    // Simple client-side encryption (optional deep encryption)
-    async function encrypt(text) {
-      if (!password) return text;
-      const encoder = new TextEncoder();
-      const data = encoder.encode(text);
-      const keyMaterial = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(password.padEnd(16, '0')),
-        { name: 'PBKDF2' },
-        false,
-        ['deriveKey']
-      );
-      const key = await crypto.subtle.deriveKey(
-        { name: 'PBKDF2', salt: encoder.encode('burnchat'), iterations: 100000, hash: 'SHA-256' },
-        keyMaterial,
-        { name: 'AES-GCM', length: 256 },
-        false,
-        ['encrypt']
-      );
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
-      const combined = new Uint8Array(iv.length + encrypted.byteLength);
-      combined.set(iv);
-      combined.set(new Uint8Array(encrypted), iv.length);
-      return btoa(String.fromCharCode(...combined));
+    function addSystem(text) {
+      const div = document.createElement('div');
+      div.className = 'text-center text-xs text-gray-500 py-1';
+      div.textContent = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    async function decrypt(ciphertext) {
-      if (!password || !ciphertext || ciphertext === ciphertext) return ciphertext;
-      try {
-        const combined = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
-        const iv = combined.slice(0, 12);
-        const data = combined.slice(12);
-        const encoder = new TextEncoder();
-        const keyMaterial = await crypto.subtle.importKey(
-          'raw',
-          encoder.encode(password.padEnd(16, '0')),
-          { name: 'PBKDF2' },
-          false,
-          ['deriveKey']
-        );
-        const key = await crypto.subtle.deriveKey(
-          { name: 'PBKDF2', salt: encoder.encode('burnchat'), iterations: 100000, hash: 'SHA-256' },
-          keyMaterial,
-          { name: 'AES-GCM', length: 256 },
-          false,
-          ['decrypt']
-        );
-        const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
-        return new TextDecoder().decode(decrypted);
-      } catch (e) {
-        return '[Encrypted]';
-      }
+    function addMessage(name, text) {
+      const div = document.createElement('div');
+      div.className = 'bg-white rounded-lg px-3 py-2 text-sm shadow-sm max-w-xl';
+      div.innerHTML = `<span class="font-medium text-blue-600">${name}:</span> <span class="text-gray-800">${text}</span>`;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    function updateCountdown() {
+    function updateTimer() {
       if (!expireAt) return;
       const left = Math.max(0, expireAt - Date.now());
       const h = Math.floor(left / 3600000);
       const m = Math.floor((left % 3600000) / 60000);
       const s = Math.floor((left % 60000) / 1000);
-      document.getElementById('countdown').textContent =
-        `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }
-    setInterval(updateCountdown, 1000);
-
-    function addMessage(name, text, isSystem = false) {
-      const div = document.createElement('div');
-      div.className = isSystem
-        ? 'text-center text-sm text-gray-500'
-        : 'bg-white rounded-lg px-3 py-2 shadow-sm';
-      div.innerHTML = isSystem
-        ? text
-        : `<span class="font-medium text-blue-600">${name}:</span> <span>${text}</span>`;
-      document.getElementById('messages').appendChild(div);
-      div.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    socket.emit('join-room', {
-      roomId,
-      isCreator,
-      name: creatorName
-    });
-
-    socket.on('joined', async (data) => {
-      myName = data.name;
-      expireAt = data.expireAt;
-      document.getElementById('myName').textContent = myName;
-      if (isCreator) {
-        document.getElementById('dissolveBtn').classList.remove('hidden');
+      timerEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      if (left <= 0) {
+        addSystem('Room has expired.');
+        msgInput.disabled = true;
       }
-      updateCountdown();
+    }
+    setInterval(updateTimer, 1000);
+
+    socket.on('connect', () => {
+      socket.emit('join-room', { roomId, isCreator, name: creatorName });
     });
 
-    socket.on('history', async (messages) => {
-      for (const msg of messages) {
-        const text = await decrypt(msg.ciphertext);
-        addMessage(msg.name, text);
-      }
+    socket.on('joined', ({ name, expireAt: exp }) => {
+      myName = name;
+      expireAt = exp;
+      myNameEl.textContent = name;
+      if (isCreator) dissolveBtn.classList.remove('hidden');
+      updateTimer();
     });
 
-    socket.on('message', async (msg) => {
-      const text = await decrypt(msg.ciphertext);
-      addMessage(msg.name, text);
+    socket.on('history', (msgs) => {
+      msgs.forEach(m => addMessage(m.name, m.ciphertext || ''));
     });
 
-    socket.on('system', (text) => {
-      addMessage('', text, true);
+    socket.on('message', (m) => {
+      addMessage(m.name, m.ciphertext || '');
     });
 
-    socket.on('error', (msg) => {
-      alert(msg);
-    });
+    socket.on('system', (text) => addSystem(text));
 
-    document.getElementById('msgForm').addEventListener('submit', async (e) => {
+    socket.on('error', (err) => addSystem('Error: ' + err));
+
+    document.getElementById('msgForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const input = document.getElementById('msgInput');
-      const text = input.value.trim();
+      const text = msgInput.value.trim();
       if (!text) return;
-
-      const ciphertext = await encrypt(text);
-      socket.emit('message', { roomId, ciphertext });
-      input.value = '';
+      socket.emit('message', { roomId, ciphertext: text });
+      msgInput.value = '';
     });
 
-    document.getElementById('dissolveBtn').addEventListener('click', () => {
-      if (confirm('Dissolve this room for everyone?')) {
+    dissolveBtn.addEventListener('click', () => {
+      if (confirm('Dissolve this room? All messages will be permanently deleted.')) {
         socket.emit('dissolve', { roomId });
       }
     });
