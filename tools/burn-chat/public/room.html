@@ -127,7 +127,18 @@
       const owner = cName || creatorName || 'Owner';
       ownerNameEl.textContent = owner;
       initSlots(owner);
+    
+      // 如果不是房主，把自己的名字填到第一个 Guest 位置
+      if (!isCreator && name && name !== owner) {
+        const empty = slots.find(s => !s.joined && s.label.startsWith('Guest'));
+        if (empty) {
+          empty.label = name;
+          empty.joined = true;
+        }
+      }
+    
       if (isCreator) dissolveBtn.classList.remove('hidden');
+      renderParticipants();
       updateTimer();
     });
 
