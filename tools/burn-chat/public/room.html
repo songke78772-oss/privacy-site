@@ -2,250 +2,320 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Burn Chat Room - ToolNest</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Burn Chat Room</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/burn-chat/socket.io/socket.io.js"></script>
 </head>
-<body class="bg-gray-50 h-screen flex flex-col">
-  <div class="bg-white border-b px-4 py-4">
-    <h1 class="text-2xl font-bold text-blue-600">Burn Chat</h1>
-    <p class="text-gray-600 text-sm mt-1">Temporary group chat. Messages disappear when the room ends.</p>
-  </div>
-
-  <header class="bg-white border-b px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-    <div class="flex flex-col gap-1">
-      <div class="flex items-center gap-3">
-        <span class="text-sm text-gray-500">Owner:</span>
-        <span id="ownerName" class="font-semibold text-blue-600">...</span>
-        <span id="timer" class="text-sm text-gray-500 font-mono">--:--:--</span>
-      </div>
-      <div id="participants" class="flex flex-wrap gap-2 text-sm"></div>
+<body class="bg-gray-100 h-screen flex flex-col">
+  <!-- Header -->
+  <header class="bg-white border-b px-4 py-3 flex justify-between items-center">
+    <div>
+      <h1 class="font-bold text-lg">Burn Chat</h1>
+      <p id="roomInfo" class="text-sm text-gray-500">Connecting...</p>
     </div>
-    <div class="flex gap-2">
-      <button id="whiteboardBtn" class="bg-gray-600 text-white text-sm px-3 py-1.5 rounded hover:bg-gray-700">Whiteboard</button>
-      <button id="dissolveBtn" class="hidden bg-red-600 text-white text-sm px-3 py-1.5 rounded hover:bg-red-700">Dissolve Room</button>
+    <div class="flex items-center gap-3">
+      <div id="countdown" class="text-sm font-mono text-orange-600"></div>
+      <button id="whiteboardBtn" class="px-3 py-1.5 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">Whiteboard</button>
+      <button id="dissolveBtn" class="hidden px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700">Dissolve Room</button>
     </div>
   </header>
 
+  <!-- Messages -->
   <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
 
-  <footer class="bg-white border-t p-3">
-    <form id="msgForm" class="flex gap-2 max-w-4xl mx-auto">
-      <input id="msgInput" type="text" placeholder="Type a message..." autocomplete="off"
-             class="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-      <label class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-sm cursor-pointer">
-        Image
+  <!-- Input -->
+  <div class="bg-white border-t p-3">
+    <div class="flex gap-2">
+      <input id="msgInput" type="text" placeholder="Type a message..." class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <label class="px-3 py-2 border rounded cursor-pointer hover:bg-gray-50 text-sm flex items-center">
+        📷
         <input type="file" id="imageInput" accept="image/*" class="hidden">
       </label>
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">Send</button>
-    </form>
-  </footer>
+      <button id="sendBtn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Send</button>
+    </div>
+    <p class="text-xs text-gray-400 mt-1">Images are compressed and disappear with the room.</p>
+  </div>
 
   <!-- Whiteboard Modal -->
   <div id="whiteboardModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl w-full max-w-4xl h-[80vh] flex flex-col">
-      <div class="flex justify-between items-center p-4 border-b">
+    <div class="bg-white rounded-xl w-full max-w-5xl h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center p-3 border-b">
         <h2 class="font-bold">Shared Whiteboard</h2>
-        <button id="closeWhiteboard" class="text-gray-500 hover:text-gray-800">✕</button>
+        <button id="closeWhiteboard" class="text-gray-500 hover:text-gray-800 text-xl">✕</button>
       </div>
-      <canvas id="whiteboard" class="flex-1 bg-white border-t cursor-crosshair"></canvas>
-      <div class="p-3 border-t flex gap-2">
-        <button id="clearBoard" class="bg-red-100 text-red-600 px-3 py-1 rounded text-sm">Clear</button>
-        <span class="text-xs text-gray-500 self-center">Draw with mouse / touch. Changes are shared in real time.</span>
+
+      <!-- Toolbar -->
+      <div class="flex flex-wrap items-center gap-3 p-3 border-b bg-gray-50 text-sm">
+        <div class="flex items-center gap-1">
+          <span class="text-gray-500">Color:</span>
+          <button class="w-6 h-6 rounded-full border-2 border-gray-800 color-btn" data-color="#2563eb" style="background:#2563eb"></button>
+          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#dc2626" style="background:#dc2626"></button>
+          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#16a34a" style="background:#16a34a"></button>
+          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#000000" style="background:#000"></button>
+          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#f59e0b" style="background:#f59e0b"></button>
+          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#9333ea" style="background:#9333ea"></button>
+        </div>
+        <div class="flex items-center gap-1">
+          <span class="text-gray-500">Size:</span>
+          <button class="size-btn px-2 py-0.5 rounded bg-blue-100 text-blue-700" data-size="2">S</button>
+          <button class="size-btn px-2 py-0.5 rounded" data-size="4">M</button>
+          <button class="size-btn px-2 py-0.5 rounded" data-size="8">L</button>
+          <button class="size-btn px-2 py-0.5 rounded" data-size="16">XL</button>
+        </div>
+        <button id="eraserBtn" class="px-3 py-1 rounded border hover:bg-gray-100">Eraser</button>
+        <button id="undoBtn" class="px-3 py-1 rounded border hover:bg-gray-100">Undo</button>
+        <label class="px-3 py-1 rounded border hover:bg-gray-100 cursor-pointer">
+          Paste Image
+          <input type="file" id="boardImageInput" accept="image/*" class="hidden">
+        </label>
+        <button id="clearBoard" class="px-3 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200">Clear All</button>
+      </div>
+
+      <canvas id="whiteboard" class="flex-1 bg-white cursor-crosshair"></canvas>
+      <div class="p-2 text-xs text-gray-500 text-center border-t">
+        Draw together in real time. All strokes and images are temporary and disappear with the room.
       </div>
     </div>
   </div>
 
   <script>
-    const params = new URLSearchParams(location.search);
-    const pathParts = location.pathname.split('/');
-    const roomId = pathParts[pathParts.length - 1];
-    const isCreator = params.get('creator') === '1';
-    const creatorName = params.get('name') || '';
-
     const socket = io({ path: '/burn-chat/socket.io' });
+    const roomId = location.pathname.split('/').pop();
+    const params = new URLSearchParams(location.search);
+    const isCreator = params.get('creator') === '1';
 
     const messagesEl = document.getElementById('messages');
     const msgInput = document.getElementById('msgInput');
-    const ownerNameEl = document.getElementById('ownerName');
-    const timerEl = document.getElementById('timer');
-    const dissolveBtn = document.getElementById('dissolveBtn');
-    const participantsEl = document.getElementById('participants');
+    const sendBtn = document.getElementById('sendBtn');
     const imageInput = document.getElementById('imageInput');
+    const countdownEl = document.getElementById('countdown');
+    const dissolveBtn = document.getElementById('dissolveBtn');
     const whiteboardBtn = document.getElementById('whiteboardBtn');
     const whiteboardModal = document.getElementById('whiteboardModal');
     const closeWhiteboard = document.getElementById('closeWhiteboard');
     const canvas = document.getElementById('whiteboard');
-    const clearBoard = document.getElementById('clearBoard');
 
-    let expireAt = 0;
-    let maxPeople = 2;
-    let slots = [];
     let myName = '';
-    const colors = ['#16a34a', '#dc2626', '#9333ea', '#ea580c', '#0891b2', '#be185d', '#4f46e5', '#0d9488'];
+    let expireAt = 0;
 
-    // Whiteboard
+    // Join room
+    socket.emit('join-room', { roomId, isCreator });
+
+    socket.on('joined', (data) => {
+      myName = data.name;
+      expireAt = data.expireAt;
+      document.getElementById('roomInfo').textContent = `You are ${myName} · Room expires soon`;
+      if (data.isCreator) dissolveBtn.classList.remove('hidden');
+      updateCountdown();
+    });
+
+    socket.on('system', (text) => addMessage('System', text, true));
+    socket.on('history', (msgs) => msgs.forEach(m => addMessage(m.name, m.ciphertext, false, m.isImage)));
+    socket.on('message', (m) => addMessage(m.name, m.ciphertext, false, m.isImage));
+    socket.on('error', (err) => alert(err));
+
+    function addMessage(name, text, isSystem = false, isImage = false) {
+      const div = document.createElement('div');
+      div.className = isSystem ? 'text-center text-gray-500 text-sm' : 'flex';
+      if (!isSystem) {
+        const bubble = document.createElement('div');
+        bubble.className = 'max-w-xs md:max-w-md px-3 py-2 rounded-lg ' + (name === myName ? 'bg-blue-600 text-white ml-auto' : 'bg-white border');
+        bubble.innerHTML = `<div class="text-xs opacity-70 mb-1">${name}</div>`;
+        if (isImage) {
+          const img = document.createElement('img');
+          img.src = text;
+          img.className = 'max-w-full rounded-lg mt-1 cursor-pointer hover:opacity-90';
+          img.style.maxHeight = '200px';
+          img.onclick = () => {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4';
+            modal.onclick = () => modal.remove();
+            const full = document.createElement('img');
+            full.src = text;
+            full.className = 'max-w-full max-h-full object-contain';
+            full.onclick = (e) => e.stopPropagation();
+            modal.appendChild(full);
+            document.body.appendChild(modal);
+          };
+          bubble.appendChild(img);
+        } else {
+          bubble.innerHTML += `<div>${escapeHtml(text)}</div>`;
+        }
+        div.appendChild(bubble);
+      } else {
+        div.textContent = text;
+      }
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    }
+
+    function sendMessage(text, isImage = false) {
+      if (!text.trim()) return;
+      socket.emit('message', { roomId, ciphertext: text, isImage });
+      msgInput.value = '';
+    }
+
+    sendBtn.addEventListener('click', () => sendMessage(msgInput.value));
+    msgInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage(msgInput.value);
+    });
+
+    // Chat image upload (500KB)
+    imageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 500 * 1024) {
+        alert('Image must be under 500KB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => sendMessage(reader.result, true);
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+
+    // Countdown
+    function updateCountdown() {
+      const left = Math.max(0, expireAt - Date.now());
+      const h = Math.floor(left / 3600000);
+      const m = Math.floor((left % 3600000) / 60000);
+      countdownEl.textContent = `${h}h ${m}m left`;
+      if (left > 0) setTimeout(updateCountdown, 30000);
+    }
+
+    dissolveBtn.addEventListener('click', () => {
+      if (confirm('Dissolve this room for everyone?')) {
+        socket.emit('dissolve', { roomId });
+      }
+    });
+
+    // ========== Whiteboard ==========
     const ctx = canvas.getContext('2d');
     let drawing = false;
     let lastX = 0, lastY = 0;
+    let currentColor = '#2563eb';
+    let currentSize = 2;
+    let isEraser = false;
+    let strokeHistory = [];
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width;
       canvas.height = rect.height;
+      redrawHistory();
     }
     window.addEventListener('resize', resizeCanvas);
 
-    function getNameColor(name) {
-      let hash = 0;
-      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-      const palette = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2', '#be185d', '#0d9488'];
-      return palette[Math.abs(hash) % palette.length];
-    }
-
-    function renderParticipants() {
-      participantsEl.innerHTML = '';
-      slots.forEach(slot => {
-        const span = document.createElement('span');
-        span.className = 'px-2 py-0.5 rounded text-xs font-medium';
-        if (slot.joined) {
-          span.style.background = slot.color + '22';
-          span.style.color = slot.color;
-          span.textContent = slot.label;
-        } else {
-          span.className += ' bg-gray-100 text-gray-400';
-          span.textContent = slot.label;
-        }
-        participantsEl.appendChild(span);
+    function redrawHistory() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      strokeHistory.forEach(stroke => {
+        ctx.beginPath();
+        ctx.moveTo(stroke.fromX, stroke.fromY);
+        ctx.lineTo(stroke.toX, stroke.toY);
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = stroke.size;
+        ctx.lineCap = 'round';
+        ctx.stroke();
       });
     }
 
-    function initSlots(owner) {
-      slots = [{ label: owner, joined: true, color: '#1d4ed8' }];
-      for (let i = 1; i < maxPeople; i++) {
-        slots.push({ label: `Guest ${i}`, joined: false, color: colors[(i - 1) % colors.length] });
-      }
-      renderParticipants();
-    }
-
-    function addSystem(text) {
-      const div = document.createElement('div');
-      div.className = 'text-center text-xs text-gray-500 py-1';
-      div.textContent = text;
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function addMessage(name, text, isMine = false, isImage = false) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'flex ' + (isMine ? 'justify-end' : 'justify-start');
-
-      const bubble = document.createElement('div');
-      bubble.className = 'max-w-[75%] sm:max-w-md rounded-2xl px-4 py-2 text-sm shadow-sm ' +
-        (isMine ? 'bg-blue-600 text-white' : 'bg-white text-gray-800 border');
-
-      const nameEl = document.createElement('div');
-      nameEl.className = 'text-xs font-medium mb-1';
-      nameEl.style.color = isMine ? 'rgba(255,255,255,0.85)' : getNameColor(name);
-      nameEl.textContent = name;
-
-      bubble.appendChild(nameEl);
-
-     if (isImage) {
-        const img = document.createElement('img');
-        img.src = text;
-        img.className = 'max-w-full rounded-lg mt-1 cursor-pointer hover:opacity-90';
-        img.style.maxHeight = '200px';
-        img.onclick = () => {
-          const modal = document.createElement('div');
-          modal.className = 'fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4';
-          modal.onclick = () => modal.remove();
-      
-          const full = document.createElement('img');
-          full.src = text;
-          full.className = 'max-w-full max-h-full object-contain';
-          full.onclick = (e) => e.stopPropagation();
-      
-          modal.appendChild(full);
-          document.body.appendChild(modal);
-        };
-        bubble.appendChild(img);
-      } else {
-        const textEl = document.createElement('div');
-        textEl.className = 'break-words';
-        textEl.textContent = text;
-        bubble.appendChild(textEl);
-      }
-
-      wrapper.appendChild(bubble);
-      messagesEl.appendChild(wrapper);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function updateTimer() {
-      if (!expireAt) return;
-      const left = Math.max(0, expireAt - Date.now());
-      const h = Math.floor(left / 3600000);
-      const m = Math.floor((left % 3600000) / 60000);
-      const s = Math.floor((left % 60000) / 1000);
-      timerEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      if (left <= 0) {
-        addSystem('Room has expired.');
-        msgInput.disabled = true;
-      }
-    }
-    setInterval(updateTimer, 1000);
-
-    // Whiteboard drawing
     function startDraw(e) {
       drawing = true;
       const rect = canvas.getBoundingClientRect();
-      lastX = (e.clientX || e.touches[0].clientX) - rect.left;
-      lastY = (e.clientY || e.touches[0].clientY) - rect.top;
+      lastX = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+      lastY = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
     }
+
     function draw(e) {
       if (!drawing) return;
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX || e.touches[0].clientX) - rect.left;
-      const y = (e.clientY || e.touches[0].clientY) - rect.top;
+      const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+      const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+
+      const stroke = {
+        fromX: lastX, fromY: lastY,
+        toX: x, toY: y,
+        color: isEraser ? '#ffffff' : currentColor,
+        size: isEraser ? currentSize * 3 : currentSize
+      };
 
       ctx.beginPath();
-      ctx.moveTo(lastX, lastY);
-      ctx.lineTo(x, y);
-      ctx.strokeStyle = '#2563eb';
-      ctx.lineWidth = 2;
+      ctx.moveTo(stroke.fromX, stroke.fromY);
+      ctx.lineTo(stroke.toX, stroke.toY);
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size;
       ctx.lineCap = 'round';
       ctx.stroke();
 
-      socket.emit('whiteboard-draw', { roomId, fromX: lastX, fromY: lastY, toX: x, toY: y });
+      strokeHistory.push(stroke);
+      if (strokeHistory.length > 500) strokeHistory.shift();
+
+      socket.emit('whiteboard-draw', { roomId, ...stroke });
       lastX = x;
       lastY = y;
     }
+
     function stopDraw() { drawing = false; }
 
     canvas.addEventListener('mousedown', startDraw);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDraw);
     canvas.addEventListener('mouseout', stopDraw);
-    canvas.addEventListener('touchstart', startDraw);
-    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
     canvas.addEventListener('touchend', stopDraw);
+
+    document.querySelectorAll('.color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentColor = btn.dataset.color;
+        isEraser = false;
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('border-gray-800'));
+        btn.classList.add('border-gray-800');
+      });
+    });
+
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentSize = Number(btn.dataset.size);
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('bg-blue-100', 'text-blue-700'));
+        btn.classList.add('bg-blue-100', 'text-blue-700');
+      });
+    });
+
+    document.getElementById('eraserBtn').addEventListener('click', () => {
+      isEraser = !isEraser;
+      document.getElementById('eraserBtn').classList.toggle('bg-yellow-200', isEraser);
+    });
+
+    document.getElementById('undoBtn').addEventListener('click', () => {
+      strokeHistory.pop();
+      redrawHistory();
+      socket.emit('whiteboard-clear', { roomId });
+      strokeHistory.forEach(s => socket.emit('whiteboard-draw', { roomId, ...s }));
+    });
 
     whiteboardBtn.addEventListener('click', () => {
       whiteboardModal.classList.remove('hidden');
       setTimeout(resizeCanvas, 50);
     });
     closeWhiteboard.addEventListener('click', () => whiteboardModal.classList.add('hidden'));
-    clearBoard.addEventListener('click', () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      socket.emit('whiteboard-clear', { roomId });
+    document.getElementById('clearBoard').addEventListener('click', () => {
+      if (confirm('Clear the whiteboard for everyone?')) {
+        strokeHistory = [];
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        socket.emit('whiteboard-clear', { roomId });
+      }
     });
 
-    // Image upload
-    imageInput.addEventListener('change', () => {
-      const file = imageInput.files[0];
+    // Paste image on whiteboard (500KB)
+    document.getElementById('boardImageInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
       if (!file) return;
       if (file.size > 500 * 1024) {
         alert('Image must be under 500KB');
@@ -253,87 +323,42 @@
       }
       const reader = new FileReader();
       reader.onload = () => {
-        socket.emit('message', { roomId, ciphertext: reader.result, isImage: true });
+        const img = new Image();
+        img.onload = () => {
+          const maxW = 400;
+          const scale = Math.min(1, maxW / img.width);
+          const w = img.width * scale;
+          const h = img.height * scale;
+          const x = (canvas.width - w) / 2;
+          const y = (canvas.height - h) / 2;
+          ctx.drawImage(img, x, y, w, h);
+          socket.emit('whiteboard-image', { roomId, dataUrl: reader.result, x, y, w, h });
+        };
+        img.src = reader.result;
       };
       reader.readAsDataURL(file);
-      imageInput.value = '';
+      e.target.value = '';
     });
 
-    socket.on('connect', () => {
-      socket.emit('join-room', { roomId, isCreator, name: creatorName });
-    });
-
-    socket.on('joined', ({ name, expireAt: exp, maxPeople: mp, creatorName: cName, isCreator: ic }) => {
-      myName = name;
-      expireAt = exp;
-      maxPeople = mp || 2;
-      const owner = cName || creatorName || 'Owner';
-      ownerNameEl.textContent = owner;
-      initSlots(owner);
-
-      if (!ic && name && name !== owner) {
-        const empty = slots.find(s => !s.joined && s.label.startsWith('Guest'));
-        if (empty) {
-          empty.label = name;
-          empty.joined = true;
-        }
-      }
-
-      if (ic) dissolveBtn.classList.remove('hidden');
-      renderParticipants();
-      updateTimer();
-    });
-
-    socket.on('history', (msgs) => {
-      msgs.forEach(m => addMessage(m.name, m.ciphertext || '', m.name === myName, m.isImage));
-    });
-
-    socket.on('message', (m) => {
-      addMessage(m.name, m.ciphertext || '', m.name === myName, m.isImage);
-    });
-
-    socket.on('whiteboard-draw', ({ fromX, fromY, toX, toY }) => {
+    socket.on('whiteboard-draw', (stroke) => {
       ctx.beginPath();
-      ctx.moveTo(fromX, fromY);
-      ctx.lineTo(toX, toY);
-      ctx.strokeStyle = '#2563eb';
-      ctx.lineWidth = 2;
+      ctx.moveTo(stroke.fromX, stroke.fromY);
+      ctx.lineTo(stroke.toX, stroke.toY);
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size;
       ctx.lineCap = 'round';
       ctx.stroke();
     });
 
     socket.on('whiteboard-clear', () => {
+      strokeHistory = [];
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
-    socket.on('system', (text) => {
-      addSystem(text);
-      const joinMatch = text.match(/^(.+) has joined the room$/);
-      if (joinMatch) {
-        const joinedName = joinMatch[1];
-        const empty = slots.find(s => !s.joined && s.label.startsWith('Guest'));
-        if (empty && joinedName !== ownerNameEl.textContent) {
-          empty.label = joinedName;
-          empty.joined = true;
-          renderParticipants();
-        }
-      }
-    });
-
-    socket.on('error', (err) => addSystem('Error: ' + err));
-
-    document.getElementById('msgForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = msgInput.value.trim();
-      if (!text) return;
-      socket.emit('message', { roomId, ciphertext: text, isImage: false });
-      msgInput.value = '';
-    });
-
-    dissolveBtn.addEventListener('click', () => {
-      if (confirm('Dissolve this room? All messages will be permanently deleted.')) {
-        socket.emit('dissolve', { roomId });
-      }
+    socket.on('whiteboard-image', ({ dataUrl, x, y, w, h }) => {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, x, y, w, h);
+      img.src = dataUrl;
     });
   </script>
 </body>
