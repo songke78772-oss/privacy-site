@@ -66,11 +66,21 @@
         </label>
         <div class="flex items-center gap-1">
           <span class="text-gray-500">Flags:</span>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#ef4444" title="Red">🚩</button>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#3b82f6" title="Blue">🚩</button>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#22c55e" title="Green">🚩</button>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#f59e0b" title="Yellow">🚩</button>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#a855f7" title="Purple">🚩</button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#ef4444" title="Red">
+            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#ef4444"></div>
+          </button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#3b82f6" title="Blue">
+            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#3b82f6"></div>
+          </button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#22c55e" title="Green">
+            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#22c55e"></div>
+          </button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#f59e0b" title="Yellow">
+            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#f59e0b"></div>
+          </button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#a855f7" title="Purple">
+            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#a855f7"></div>
+          </button>
         </div>
         <button id="clearBoard" class="px-3 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200">Clear All</button>
       </div>
@@ -318,10 +328,14 @@
       whiteboardModal.classList.remove('hidden');
       setTimeout(() => {
         resizeCanvas();
+        strokeHistory = [];
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         socket.emit('request-whiteboard', { roomId });
-      }, 50);
+      }, 80);
     });
+
     closeWhiteboard.addEventListener('click', () => whiteboardModal.classList.add('hidden'));
+
     document.getElementById('clearBoard').addEventListener('click', () => {
       if (confirm('Clear the whiteboard for everyone?')) {
         strokeHistory = [];
@@ -356,7 +370,6 @@
       e.target.value = '';
     });
 
-    // 插旗
     document.querySelectorAll('.flag-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         flagMode = btn.dataset.color;
@@ -381,7 +394,6 @@
     });
 
     function drawFlag(x, y, color) {
-      // 旗杆
       ctx.beginPath();
       ctx.moveTo(x, y - 18);
       ctx.lineTo(x, y + 22);
@@ -389,7 +401,6 @@
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // 旗面（三角形）
       ctx.beginPath();
       ctx.moveTo(x, y - 18);
       ctx.lineTo(x + 28, y - 8);
@@ -427,9 +438,8 @@
       drawFlag(x, y, color);
     });
 
-    // 请求历史（晚进房间的人）
     socket.on('whiteboard-history', (history) => {
-      strokeHistory = history || [];
+      strokeHistory = Array.isArray(history) ? history : [];
       redrawAll();
     });
   </script>
