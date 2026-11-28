@@ -8,10 +8,15 @@
 </head>
 <body class="bg-gray-50">
   <div class="max-w-xl mx-auto py-8 px-4">
-    <h1 class="text-2xl font-bold text-blue-600">Create a Burn Chat</h1>
-    <p class="text-gray-600 text-sm mt-1 mb-6">Temporary group chat. Messages disappear when the room ends.</p>
+    <h1 class="text-2xl font-bold text-blue-600">Burn Chat</h1>
+    <p class="text-gray-600 text-sm mt-1">Temporary group chat. Messages disappear when the room ends.</p>
 
-    <form id="createForm" class="bg-white rounded-xl shadow p-6 space-y-4">
+    <div class="mt-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg px-4 py-3">
+      <strong>100% Temporary</strong><br>
+      All messages are deleted when the room expires or is dissolved. Nothing is stored permanently.
+    </div>
+
+    <form id="createForm" class="bg-white rounded-xl shadow p-6 mt-6 space-y-4">
       <div>
         <label class="block text-sm font-medium mb-1">Max People</label>
         <select id="maxPeople" class="w-full border rounded px-3 py-2">
