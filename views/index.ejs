@@ -13,13 +13,21 @@
         <img src="/images/logo.png" alt="ProToolNest" class="h-8">
         <span class="text-lg font-semibold text-gray-800">ProToolNest Privacy</span>
       </a>
-      <div class="text-sm">
+      <div class="flex items-center gap-4 text-sm">
+        <select id="lang-switcher" class="border rounded px-2 py-1 text-sm">
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+          <option value="es">Español</option>
+          <option value="ja">日本語</option>
+          <option value="ko">한국어</option>
+          <option value="ar">العربية</option>
+        </select>
         <% if (loggedIn) { %>
-          <span class="text-gray-600 mr-3"><%= email %></span>
-          <a href="/logout" class="text-gray-600 hover:text-gray-800">Logout</a>
+          <span class="text-gray-600"><%= email %></span>
+          <a href="/logout" class="text-gray-600 hover:text-gray-800" data-i18n="nav_logout">Logout</a>
         <% } else { %>
-          <a href="/login" class="text-gray-600 hover:text-gray-800 mr-3">Login</a>
-          <a href="/register" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">Sign Up</a>
+          <a href="/login" class="text-gray-600 hover:text-gray-800" data-i18n="nav_login">Login</a>
+          <a href="/register" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700" data-i18n="nav_signup">Sign Up</a>
         <% } %>
       </div>
     </div>
@@ -27,19 +35,31 @@
 
   <main class="max-w-5xl mx-auto px-4 py-12">
     <div class="text-center mb-12">
-      <h1 class="text-3xl font-bold text-gray-800 mb-3">Privacy Tools</h1>
-      <p class="text-gray-600">Encryption happens in your browser. The server never sees your data.</p>
+      <h1 class="text-3xl font-bold text-gray-800 mb-3" data-i18n="hero_title">Privacy Tools</h1>
+      <p class="text-gray-600" data-i18n="hero_desc">Encryption happens in your browser. The server never sees your data.</p>
     </div>
 
     <div class="grid md:grid-cols-2 gap-6">
-      <% tools.forEach(tool => { %>
-        <a href="<%= tool.url %>" target="_blank" class="block bg-white border rounded-xl p-6 hover:shadow-md transition">
-          <div class="text-3xl mb-3"><%= tool.icon %></div>
-          <h2 class="text-xl font-semibold text-gray-800 mb-2"><%= tool.name %></h2>
-          <p class="text-gray-600 text-sm"><%= tool.description %></p>
-        </a>
-      <% }) %>
+      <a href="/emberlink/" target="_blank" class="block bg-white border rounded-xl p-6 hover:shadow-md transition">
+        <div class="text-3xl mb-3">🔥</div>
+        <h2 class="text-xl font-semibold text-gray-800 mb-2">EmberLink</h2>
+        <p class="text-gray-600 text-sm" data-i18n="tool_emberlink_desc">Share a message that self-destructs after reading. Encrypted in your browser.</p>
+      </a>
+
+      <a href="/keydrop/" target="_blank" class="block bg-white border rounded-xl p-6 hover:shadow-md transition">
+        <div class="text-3xl mb-3">🔑</div>
+        <h2 class="text-xl font-semibold text-gray-800 mb-2">KeyDrop</h2>
+        <p class="text-gray-600 text-sm" data-i18n="tool_keydrop_desc">Encrypt a file in your browser. The key never leaves your device.</p>
+      </a>
+
+      <a href="/burn-chat/" target="_blank" class="block bg-white border rounded-xl p-6 hover:shadow-md transition">
+        <div class="text-3xl mb-3">💬</div>
+        <h2 class="text-xl font-semibold text-gray-800 mb-2">Burn Chat</h2>
+        <p class="text-gray-600 text-sm" data-i18n="tool_burnchat_desc">Create a temporary chat room that disappears after use. Optional client-side encryption.</p>
+      </a>
     </div>
   </main>
+
+  <script src="/js/i18n.js"></script>
 </body>
 </html>
