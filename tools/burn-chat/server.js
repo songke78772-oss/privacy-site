@@ -168,7 +168,8 @@ io.on('connection', (socket) => {
     socket.emit('joined', { 
       name: displayName, 
       expireAt: room.expireAt,
-      maxPeople: room.maxPeople 
+      maxPeople: room.maxPeople,
+      creatorName: room.creatorName
     });
     socket.emit('history', room.messages.slice(-100));
   });
