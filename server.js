@@ -45,9 +45,15 @@ const tools = [
     description: 'Encrypt a file in your browser. The key never leaves your device.',
     url: '/keydrop/',
     icon: '🔑'
+  },
+  {
+    id: 'burn-chat',
+    name: 'Burn Chat',
+    description: 'Create a temporary chat room that disappears after use. Optional client-side encryption.',
+    url: '/burn-chat/',
+    icon: '💬'
   }
 ];
-
 app.get('/', (req, res) => {
   res.render('index', {
     loggedIn: !!req.session.userId,
