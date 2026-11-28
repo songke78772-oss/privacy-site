@@ -235,6 +235,10 @@
           ctx.stroke();
         } else if (item.type === 'flag') {
           drawFlag(item.x, item.y, item.color);
+        } else if (item.type === 'image' && item.dataUrl) {
+          const img = new Image();
+          img.onload = () => ctx.drawImage(img, item.x, item.y, item.w, item.h);
+          img.src = item.dataUrl;
         }
       });
     }
