@@ -2,59 +2,299 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EmberLink</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+  <script src="./libs/qrcode.min (1).js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 20px;
+      color: #1e293b;
+    }
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      padding: 32px;
+    }
+    h1 { margin: 0 0 8px 0; color: #2563eb; font-size: 28px; }
+    .subtitle { color: #64748b; margin-bottom: 24px; }
+    #editor { height: 280px; margin-bottom: 20px; }
+    .ql-toolbar { border-radius: 8px 8px 0 0; background: #f1f5f9; }
+    .ql-container { border-radius: 0 0 8px 8px; }
+    .options {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 24px 0 16px 0;
+      align-items: flex-start;
+    }
+    .option {
+      flex: 1;
+      min-width: 180px;
+      display: flex;
+      flex-direction: column;
+    }
+    .option label {
+      display: block;
+      font-size: 14px;
+      color: #475569;
+      margin-bottom: 6px;
+      height: 20px;
+    }
+    .option input, .option select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      height: 42px;
+    }
+    .option input:focus, .option select:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+    .strength {
+      height: 4px;
+      background: #e2e8f0;
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .strength-bar {
+      height: 100%;
+      width: 0%;
+      transition: width 0.2s, background 0.2s;
+    }
+    #createBtn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+    #createBtn:hover { background: #1d4ed8; }
+    #createBtn.success { background: #10b981; }
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      background: #eff6ff;
+      border-radius: 8px;
+      border: 1px solid #bfdbfe;
+      word-break: break-all;
+      display: none;
+    }
+    .qr { margin-top: 12px; text-align: center; }
+    .help {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+    .help strong { color: #475569; }
+    @media (max-width: 640px) {
+      .container { padding: 20px; }
+      .options { flex-direction: column; }
+      .option { min-width: 100%; }
+      #editor { height: 220px; }
+    }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-  <div class="max-w-lg mx-auto px-4 py-12">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-2xl font-bold text-gray-800">EmberLink</h1>
-      <select id="lang-switcher" class="border rounded px-2 py-1 text-sm">
-        <option value="en">English</option>
-        <option value="zh">中文</option>
-        <option value="es">Español</option>
-        <option value="ja">日本語</option>
-        <option value="ko">한국어</option>
-        <option value="ar">العربية</option>
-      </select>
+<body>
+  <div class="container">
+    <h1>EmberLink</h1>
+    <p class="subtitle">Share a message that can only be viewed once. Encrypted in your browser.</p>
+
+    <div id="editor"></div>
+
+    <div class="options">
+      <div class="option">
+        <label>Password (optional)</label>
+        <input type="password" id="password" placeholder="Leave empty for no password" oninput="checkStrength()">
+        <div class="strength"><div class="strength-bar" id="strengthBar"></div></div>
+      </div>
+      <div class="option">
+        <label>Expires in</label>
+        <select id="expires">
+          <option value="1">1 hour</option>
+          <option value="24" selected>24 hours</option>
+          <option value="168">7 days</option>
+          <option value="0">Never</option>
+        </select>
+      </div>
+      <div class="option">
+        <label>Max views</label>
+        <select id="maxViews">
+          <option value="1" selected>1 (burn after reading)</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
+        </select>
+      </div>
     </div>
 
-    <div class="bg-white border rounded-xl p-6">
-      <p class="text-gray-600 text-sm mb-6" data-i18n="ember_desc">Share a message that self-destructs after reading.</p>
+    <button id="createBtn" onclick="createLink()">Create Link</button>
 
-      <div class="mb-4">
-        <label class="block text-sm text-gray-700 mb-1" data-i18n="ember_message">Message</label>
-        <textarea id="message" rows="6" class="w-full border rounded px-3 py-2 text-sm" placeholder="Enter your message..."></textarea>
-      </div>
+    <div id="result" class="result"></div>
 
-      <div class="mb-6">
-        <label class="block text-sm text-gray-700 mb-1" data-i18n="ember_expire">Expire after</label>
-        <div class="flex items-center gap-2">
-          <input type="number" id="hours" value="24" min="1" max="168" class="border rounded px-3 py-2 w-24 text-sm">
-          <span class="text-sm text-gray-600" data-i18n="ember_hours">hours</span>
-        </div>
-      </div>
-
-      <button id="generate" class="w-full bg-blue-600 text-white py-2.5 rounded hover:bg-blue-700 text-sm font-medium" data-i18n="ember_generate">Generate Link</button>
-
-      <div id="result" class="mt-6 hidden">
-        <label class="block text-sm text-gray-700 mb-1">Link</label>
-        <div class="flex gap-2">
-          <input id="link" readonly class="flex-1 border rounded px-3 py-2 text-sm bg-gray-50">
-          <button id="copy" class="bg-gray-800 text-white px-4 py-2 rounded text-sm">Copy</button>
-        </div>
-        <p class="text-xs text-gray-500 mt-2" data-i18n="ember_warning">This link will self-destruct after being read or when it expires.</p>
-      </div>
+    <div class="help">
+      <strong>How to use</strong><br>
+      Write your message, optionally set a password and expiration, then click Create Link. The link contains the decryption key after the # symbol — keep it private.<br><br>
+      <strong style="color:#dc2626;">Privacy Notice</strong><br>
+      <span style="color:#dc2626;">
+        We do not save any of your information. The message is encrypted in your browser before being sent.<br>
+        After you close this page, the content cannot be retrieved from our side.<br>
+      </span><br><br>
+      <strong>Limitations</strong><br>
+      • Images must be smaller than 500KB<br>
+      • Message is encrypted in your browser before being sent<br>
+      • After the maximum views are reached, the message is permanently deleted<br>
+      • We have implemented technical measures to prevent preview bots (such as Slack, Discord, etc.) from accessing the content, but due to ongoing technological progress, we cannot guarantee 100% prevention.
     </div>
   </div>
 
-  <script src="/js/i18n.js"></script>
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
   <script>
-    // 保留你原来的生成逻辑，这里只放多语言相关
-    document.getElementById('generate')?.addEventListener('click', async () => {
-      // 你原来的生成代码放这里
+    const quill = new Quill('#editor', {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline'],
+          ['link', 'image'],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          ['clean']
+        ]
+      },
+      placeholder: 'Write your secret message...'
     });
+
+    quill.getModule('toolbar').addHandler('image', () => {
+      const input = document.createElement('input');
+      input.setAttribute('type', 'file');
+      input.setAttribute('accept', 'image/*');
+      input.click();
+      input.onchange = () => {
+        const file = input.files[0];
+        if (!file) return;
+        if (file.size > 500 * 1024) {
+          alert('Image must be smaller than 500KB');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const range = quill.getSelection(true);
+          quill.insertEmbed(range.index, 'image', e.target.result);
+        };
+        reader.readAsDataURL(file);
+      };
+    });
+
+    function checkStrength() {
+      const pwd = document.getElementById('password').value;
+      const bar = document.getElementById('strengthBar');
+      let score = 0;
+      if (pwd.length >= 6) score++;
+      if (pwd.length >= 10) score++;
+      if (/[0-9]/.test(pwd)) score++;
+      if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
+      if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+      const widths = ['0%', '25%', '50%', '75%', '100%'];
+      const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a'];
+      bar.style.width = widths[Math.min(score, 4)];
+      bar.style.background = colors[Math.min(score, 4)];
+    }
+
+    async function createLink() {
+      const html = quill.root.innerHTML;
+      if (!html || html === '<p><br></p>') return alert('Please enter some content');
+
+      const btn = document.getElementById('createBtn');
+      btn.disabled = true;
+      btn.textContent = 'Creating...';
+
+      const password = document.getElementById('password').value;
+      const expiresInHours = parseInt(document.getElementById('expires').value) || null;
+      const maxViews = parseInt(document.getElementById('maxViews').value);
+
+      const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encoded = new TextEncoder().encode(html);
+
+      let salt = null;
+      let finalKey = key;
+      if (password) {
+        salt = crypto.getRandomValues(new Uint8Array(16));
+        const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+        const derived = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256);
+        finalKey = await crypto.subtle.importKey('raw', derived, 'AES-GCM', false, ['encrypt']);
+      }
+
+      const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, finalKey, encoded);
+      const ctBase64 = btoa(String.fromCharCode(...new Uint8Array(ciphertext)));
+      const ivBase64 = btoa(String.fromCharCode(...iv));
+      const saltBase64 = salt ? btoa(String.fromCharCode(...salt)) : null;
+
+      const res = await fetch('/emberlink/api/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ciphertext: ctBase64,
+          iv: ivBase64,
+          salt: saltBase64,
+          hasPassword: !!password,
+          expiresInHours,
+          maxViews
+        })
+      });
+      const data = await res.json();
+
+      const keyRaw = await crypto.subtle.exportKey('raw', key);
+      const keyBase64 = btoa(String.fromCharCode(...new Uint8Array(keyRaw)));
+      const link = `${location.origin}/emberlink/view.html?id=${data.id}#${keyBase64}`;
+
+      const result = document.getElementById('result');
+      result.style.display = 'block';
+       result.innerHTML = `
+        <strong>Link created:</strong><br>
+        <a href="${link}" target="_blank">${link}</a>
+        <button onclick="copyLink(this, '${link}')" style="margin-left:12px;padding:6px 14px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;">Copy</button>
+        <div class="qr"><canvas id="qrcode"></canvas></div>
+      `;
+      
+      QRCode.toCanvas(document.getElementById('qrcode'), link, { width: 180, margin: 1 }, function (error) {
+        if (error) console.error(error);
+      });
+
+      btn.textContent = 'Copied!';
+      btn.classList.add('success');
+      setTimeout(() => {
+        btn.textContent = 'Create Link';
+        btn.classList.remove('success');
+        btn.disabled = false;
+      }, 2000);
+
+      navigator.clipboard.writeText(link).catch(() => {});
+    }
+
+    function copyLink(btn, link) {
+      navigator.clipboard.writeText(link).then(() => {
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = original, 1500);
+      });
+    }
   </script>
 </body>
 </html>
