@@ -2,165 +2,142 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Burn Chat - ToolNest</title>
+  <title>Create Burn Chat - ToolNest</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen p-4">
-  <div class="max-w-3xl mx-auto">
-    <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-3xl font-bold text-blue-600">Burn Chat</h1>
-      <p class="text-gray-600 mt-1">Temporary group chat. Messages disappear when the room ends.</p>
-    </div>
+<body class="bg-gray-50">
+  <div class="max-w-xl mx-auto py-8 px-4">
+    <h1 class="text-2xl font-bold text-blue-600">Create a Burn Chat</h1>
+    <p class="text-gray-600 text-sm mt-1 mb-6">Temporary group chat. Messages disappear when the room ends.</p>
 
-    <!-- Privacy Notice -->
-    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm">
-      <p class="font-semibold text-red-700">100% Temporary</p>
-      <p class="text-red-600">All messages are permanently deleted when the room expires or is dissolved.</p>
-    </div>
-
-    <!-- Main Card -->
-    <div class="bg-white rounded-xl shadow p-6 mb-8" id="mainCard">
-      <form id="createForm">
-        <!-- Horizontal inputs -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Max Participants</label>
-            <select id="maxPeople" class="w-full border rounded px-3 py-2 text-sm">
-              <option value="2">2 people</option>
-              <option value="3">3 people</option>
-              <option value="5" selected>5 people</option>
-              <option value="10">10 people</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-            <select id="hours" class="w-full border rounded px-3 py-2 text-sm">
-              <option value="1">1 hour</option>
-              <option value="2" selected>2 hours</option>
-              <option value="5">5 hours</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Name Category</label>
-            <select id="category" class="w-full border rounded px-3 py-2 text-sm">
-              <option value="animal" selected>Animals</option>
-              <option value="fruit">Fruits</option>
-              <option value="vegetable">Vegetables</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="mb-5">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
-          <select id="creatorName" class="w-full md:w-64 border rounded px-3 py-2 text-sm">
-            <option value="Lion" selected>Lion</option>
-            <option value="Tiger">Tiger</option>
-            <option value="Bear">Bear</option>
-            <option value="Wolf">Wolf</option>
-            <option value="Fox">Fox</option>
-            <option value="Eagle">Eagle</option>
-          </select>
-        </div>
-
-        <!-- Encryption -->
-        <div class="flex items-center mb-4">
-          <input type="checkbox" id="deepEncrypt" class="mr-2">
-          <label for="deepEncrypt" class="text-sm text-gray-700">Enable Deep Encryption (password required)</label>
-        </div>
-
-        <div id="passwordSection" class="hidden mb-5">
-          <input type="text" id="password" maxlength="5" placeholder="Enter up to 5 characters" class="w-full md:w-64 border rounded px-3 py-2 text-sm">
-          <div id="strength" class="mt-1 text-xs font-medium"></div>
-          <p class="mt-2 text-sm text-blue-600">
-            Recommended: Use CipherDeck on this site to send the password securely.
-          </p>
-        </div>
-
-        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 text-sm font-medium">
-          Create Room
-        </button>
-      </form>
-    </div>
-
-    <!-- How to use / Notes -->
-    <div class="bg-white rounded-xl shadow p-6">
-      <div class="border-b mb-4">
-        <button class="tab-btn text-blue-600 border-b-2 border-blue-600 px-4 py-2 font-medium text-sm" data-tab="howto">How to Use</button>
-        <button class="tab-btn text-gray-500 px-4 py-2 font-medium text-sm" data-tab="notes">Important Notes</button>
+    <form id="createForm" class="bg-white rounded-xl shadow p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Max People</label>
+        <select id="maxPeople" class="w-full border rounded px-3 py-2">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+        </select>
       </div>
 
-      <div id="howto" class="tab-content space-y-3 text-sm text-gray-700">
-        <p><strong>1. Set room options</strong><br>Choose participants, duration, and your display name.</p>
-        <p><strong>2. Create the room</strong><br>Click Create Room. Share the one-time invite links only with people you trust.</p>
-        <p><strong>3. Chat</strong><br>Everyone joins with a link. Messages disappear when the room ends.</p>
-        <p><strong>4. Optional encryption</strong><br>Enable Deep Encryption and set a short password. Only people with the password can read messages.</p>
+      <div>
+        <label class="block text-sm font-medium mb-1">Duration</label>
+        <select id="hours" class="w-full border rounded px-3 py-2">
+          <option value="1">1 hour</option>
+          <option value="2">2 hours</option>
+          <option value="4">4 hours</option>
+          <option value="8">8 hours</option>
+          <option value="12">12 hours</option>
+          <option value="24">24 hours</option>
+        </select>
       </div>
 
-      <div id="notes" class="tab-content hidden space-y-3 text-sm text-gray-700">
-        <p class="text-red-600"><strong>Rooms are temporary.</strong> When the timer ends or the creator dissolves the room, all messages are permanently deleted.</p>
-        <p>Invite links work only while the room exists. After it expires, they become invalid.</p>
-        <p>Deep Encryption is client-side. If you lose the password, messages cannot be recovered.</p>
-        <p class="text-gray-500 text-xs mt-4">Nothing is stored after the room ends.</p>
+      <div>
+        <label class="block text-sm font-medium mb-1">Name Category</label>
+        <select id="category" class="w-full border rounded px-3 py-2">
+          <option value="animal">Animals</option>
+          <option value="fruit">Fruits</option>
+          <option value="vegetable">Vegetables</option>
+        </select>
       </div>
-    </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Your Name</label>
+        <select id="creatorName" class="w-full border rounded px-3 py-2"></select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Password (optional)</label>
+        <input type="text" id="password" placeholder="Leave empty for no password" class="w-full border rounded px-3 py-2">
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="deepEncrypt" class="rounded">
+        <label for="deepEncrypt" class="text-sm">Deep encrypt (client-side encryption)</label>
+      </div>
+
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+        Create Room
+      </button>
+    </form>
+
+    <div id="result" class="hidden mt-6 bg-white rounded-xl shadow p-6"></div>
+    <div id="error" class="hidden mt-4 text-red-600 text-sm"></div>
   </div>
 
   <script>
-  const namePools = {
-    animal: ['Lion', 'Tiger', 'Bear', 'Wolf', 'Fox', 'Deer', 'Eagle', 'Owl', 'Rabbit', 'Panda', 'Koala', 'Dolphin'],
-    fruit: ['Apple', 'Banana', 'Orange', 'Grape', 'Mango', 'Peach', 'Cherry', 'Lemon', 'Kiwi', 'Melon', 'Pear', 'Plum'],
-    vegetable: ['Carrot', 'Potato', 'Tomato', 'Onion', 'Cabbage', 'Broccoli', 'Spinach', 'Pepper', 'Corn', 'Bean', 'Pea', 'Radish']
-  };
-
-  const categorySelect = document.getElementById('category');
-  const nameSelect = document.getElementById('creatorName');
-
-  function updateNames() {
-    const cat = categorySelect.value;
-    const names = namePools[cat] || [];
-    nameSelect.innerHTML = '<option value="">Select your name</option>';
-    names.forEach(n => {
-      const opt = document.createElement('option');
-      opt.value = n;
-      opt.textContent = n;
-      nameSelect.appendChild(opt);
-    });
-  }
-
-  categorySelect.addEventListener('change', updateNames);
-  updateNames(); // 初始化
-
-  document.getElementById('createForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = {
-      maxPeople: Number(document.getElementById('maxPeople').value),
-      hours: Number(document.getElementById('hours').value),
-      category: categorySelect.value,
-      creatorName: nameSelect.value,
-      deepEncrypt: document.getElementById('deepEncrypt').checked,
-      password: document.getElementById('password').value || ''
+    const namePools = {
+      animal: ['Lion', 'Tiger', 'Bear', 'Wolf', 'Fox', 'Deer', 'Eagle', 'Owl', 'Rabbit', 'Panda', 'Koala', 'Dolphin'],
+      fruit: ['Apple', 'Banana', 'Orange', 'Grape', 'Mango', 'Peach', 'Cherry', 'Lemon', 'Kiwi', 'Melon', 'Pear', 'Plum'],
+      vegetable: ['Carrot', 'Potato', 'Tomato', 'Onion', 'Cabbage', 'Broccoli', 'Spinach', 'Pepper', 'Corn', 'Bean', 'Pea', 'Radish']
     };
 
-    const res = await fetch('/burn-chat/api/create-room', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    const result = await res.json();
-    if (result.error) return alert(result.error);
+    const categorySelect = document.getElementById('category');
+    const nameSelect = document.getElementById('creatorName');
 
-    const box = document.getElementById('result');
-    box.classList.remove('hidden');
-    const links = (result.inviteLinks || []).map(l => 
-      `<div class="flex gap-2 mb-2">
-        <input readonly value="${location.origin}${l.url}" class="flex-1 border rounded px-2 py-1 text-sm bg-gray-50">
-        <button type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied!'" class="text-sm bg-gray-200 px-3 py-1 rounded">Copy</button>
-      </div>`
-    ).join('');
-    box.innerHTML = `<p class="font-medium mb-2">Room created. Share the links below:</p>${links}`;
-  });
-</script>
+    function updateNames() {
+      const cat = categorySelect.value;
+      const names = namePools[cat] || [];
+      nameSelect.innerHTML = '';
+      names.forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        nameSelect.appendChild(opt);
+      });
+    }
+
+    categorySelect.addEventListener('change', updateNames);
+    updateNames();
+
+    document.getElementById('createForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('error');
+      const resultEl = document.getElementById('result');
+      errorEl.classList.add('hidden');
+      resultEl.classList.add('hidden');
+
+      const data = {
+        maxPeople: Number(document.getElementById('maxPeople').value),
+        hours: Number(document.getElementById('hours').value),
+        category: categorySelect.value,
+        creatorName: nameSelect.value,
+        deepEncrypt: document.getElementById('deepEncrypt').checked,
+        password: document.getElementById('password').value || ''
+      };
+
+      try {
+        const res = await fetch('/burn-chat/api/create-room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+
+        if (!res.ok || result.error) {
+          errorEl.textContent = result.error || 'Failed to create room';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        const links = (result.inviteLinks || []).map(l => 
+          `<div class="flex gap-2 mb-2">
+            <input readonly value="${location.origin}${l.url}" class="flex-1 border rounded px-2 py-1 text-sm bg-gray-50">
+            <button type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied!'" class="text-sm bg-gray-200 px-3 py-1 rounded">Copy</button>
+          </div>`
+        ).join('');
+        resultEl.innerHTML = `<p class="font-medium mb-2">Room created. Share the links below:</p>${links}`;
+        resultEl.classList.remove('hidden');
+      } catch (err) {
+        errorEl.textContent = 'Network error';
+        errorEl.classList.remove('hidden');
+      }
+    });
+  </script>
 </body>
 </html>
