@@ -15,22 +15,13 @@ const io = new Server(server, {
 });
 
 app.use(express.json());
-
-// 静态文件
 app.use(BASE_PATH, express.static(path.join(__dirname, 'public')));
 
-// 首页
-app.get(BASE_PATH, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'create.html'));
-});
-app.get(`${BASE_PATH}/`, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'create.html'));
-});
+app.get(BASE_PATH, (req, res) => res.sendFile(path.join(__dirname, 'public', 'create.html')));
+app.get(`${BASE_PATH}/`, (req, res) => res.sendFile(path.join(__dirname, 'public', 'create.html')));
 
-// 内存房间存储
 const rooms = new Map();
 
-// 名字池
 const namePools = {
   animal: ['Lion', 'Tiger', 'Bear', 'Wolf', 'Fox', 'Deer', 'Eagle', 'Owl', 'Rabbit', 'Panda', 'Koala', 'Dolphin'],
   fruit: ['Apple', 'Banana', 'Orange', 'Grape', 'Mango', 'Peach', 'Cherry', 'Lemon', 'Kiwi', 'Melon', 'Pear', 'Plum'],
@@ -46,15 +37,15 @@ function getAvailableNames(category, usedNames) {
   return pool.filter(name => !usedNames.has(name));
 }
 
-// 创建房间
 app.post(`${BASE_PATH}/api/create-room`, (req, res) => {
   const { maxPeople, hours, category, creatorName, deepEncrypt, password } = req.body;
 
-  if (!maxPeople || maxPeople < 1 || maxPeople > 10) {
-    return res.status(400).json({ error: 'Participants must be between 1 and 10' });
+  if (!maxPeople || maxPeople < 2 || maxPeople > 8) {
+    return res.status(400).json({ error: 'Participants must be between 2 and 8' });
   }
-  if (![1, 2, 5].includes(Number(hours))) {
-    return res.status(400).json({ error: 'Duration must be 1, 2, or 5 hours' });
+  const allowedHours = [1, 2, 4, 8, 12, 24];
+  if (!allowedHours.includes(Number(hours))) {
+    return res.status(400).json({ error: 'Invalid duration' });
   }
   if (!namePools[category]) {
     return res.status(400).json({ error: 'Invalid name category' });
@@ -62,12 +53,9 @@ app.post(`${BASE_PATH}/api/create-room`, (req, res) => {
   if (!creatorName || !namePools[category].includes(creatorName)) {
     return res.status(400).json({ error: 'Please select a name from the category' });
   }
-  if (deepEncrypt && (!password || password.length > 5)) {
-    return res.status(400).json({ error: 'Password must be 1-5 characters' });
-  }
 
   const roomId = generateId();
-  const expireAt = Date.now() + hours * 60 * 60 * 1000;
+  const expireAt = Date.now() + Number(hours) * 60 * 60 * 1000;
   const usedNames = new Set([creatorName]);
 
   const inviteLinks = [];
@@ -100,7 +88,7 @@ app.post(`${BASE_PATH}/api/create-room`, (req, res) => {
       io.to(roomId).emit('system', 'Room session has expired; room automatically disbanded.');
       rooms.delete(roomId);
     }
-  }, hours * 60 * 60 * 1000);
+  }, Number(hours) * 60 * 60 * 1000);
 
   res.json({
     roomId,
@@ -110,7 +98,6 @@ app.post(`${BASE_PATH}/api/create-room`, (req, res) => {
   });
 });
 
-// 验证并进入房间
 app.post(`${BASE_PATH}/api/join/:roomId/:token`, (req, res) => {
   const { roomId, token } = req.params;
   const { password } = req.body;
@@ -157,19 +144,22 @@ io.on('connection', (socket) => {
         return socket.emit('error', 'No name available');
       }
       displayName = available[Math.floor(Math.random() * available.length)];
+    } else {
+      displayName = room.creatorName;
     }
 
     room.users.set(socket.id, displayName);
     socket.join(roomId);
     socket.roomId = roomId;
-    socket.isCreator = isCreator;
+    socket.isCreator = !!isCreator;
 
     io.to(roomId).emit('system', `${displayName} has joined the room`);
     socket.emit('joined', { 
       name: displayName, 
       expireAt: room.expireAt,
       maxPeople: room.maxPeople,
-      creatorName: room.creatorName
+      creatorName: room.creatorName,
+      isCreator: !!isCreator
     });
     socket.emit('history', room.messages.slice(-100));
   });
