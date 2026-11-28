@@ -108,80 +108,59 @@
   </div>
 
   <script>
-    // Tabs
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => {
-          b.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-          b.classList.add('text-gray-500');
-        });
-        btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-        btn.classList.remove('text-gray-500');
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-        document.getElementById(btn.dataset.tab).classList.remove('hidden');
-      });
+  const namePools = {
+    animal: ['Lion', 'Tiger', 'Bear', 'Wolf', 'Fox', 'Deer', 'Eagle', 'Owl', 'Rabbit', 'Panda', 'Koala', 'Dolphin'],
+    fruit: ['Apple', 'Banana', 'Orange', 'Grape', 'Mango', 'Peach', 'Cherry', 'Lemon', 'Kiwi', 'Melon', 'Pear', 'Plum'],
+    vegetable: ['Carrot', 'Potato', 'Tomato', 'Onion', 'Cabbage', 'Broccoli', 'Spinach', 'Pepper', 'Corn', 'Bean', 'Pea', 'Radish']
+  };
+
+  const categorySelect = document.getElementById('category');
+  const nameSelect = document.getElementById('creatorName');
+
+  function updateNames() {
+    const cat = categorySelect.value;
+    const names = namePools[cat] || [];
+    nameSelect.innerHTML = '<option value="">Select your name</option>';
+    names.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      nameSelect.appendChild(opt);
     });
+  }
 
-    // Encryption toggle + strength
-    const pwInput = document.getElementById('password');
-    const strengthEl = document.getElementById('strength');
-    document.getElementById('deepEncrypt').addEventListener('change', (e) => {
-      document.getElementById('passwordSection').classList.toggle('hidden', !e.target.checked);
+  categorySelect.addEventListener('change', updateNames);
+  updateNames(); // 初始化
+
+  document.getElementById('createForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+      maxPeople: Number(document.getElementById('maxPeople').value),
+      hours: Number(document.getElementById('hours').value),
+      category: categorySelect.value,
+      creatorName: nameSelect.value,
+      deepEncrypt: document.getElementById('deepEncrypt').checked,
+      password: document.getElementById('password').value || ''
+    };
+
+    const res = await fetch('/burn-chat/api/create-room', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
-    pwInput?.addEventListener('input', () => {
-      const v = pwInput.value;
-      if (!v) { strengthEl.textContent = ''; return; }
-      const score = v.length >= 4 ? 2 : v.length >= 2 ? 1 : 0;
-      strengthEl.textContent = ['Weak', 'Fair', 'Good'][score];
-      strengthEl.className = 'mt-1 text-xs font-medium ' + ['text-red-600', 'text-yellow-600', 'text-green-600'][score];
-    });
+    const result = await res.json();
+    if (result.error) return alert(result.error);
 
-    // Submit
-    document.getElementById('createForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const maxPeople = Number(document.getElementById('maxPeople').value);
-      const hours = Number(document.getElementById('hours').value);
-      const category = document.getElementById('category').value;
-      const creatorName = document.getElementById('creatorName').value;
-      const deepEncrypt = document.getElementById('deepEncrypt').checked;
-      const password = deepEncrypt ? pwInput.value.trim() : '';
-
-      if (deepEncrypt && !password) {
-        alert('Please enter a password');
-        return;
-      }
-
-      try {
-        const res = await fetch('/burn-chat/api/create-room', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ maxPeople, hours, category, creatorName, deepEncrypt, password: password || null })
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          alert(data.error || 'Failed to create room');
-          return;
-        }
-
-       const linksHtml = (data.inviteLinks || []).map(link => 
-          `<div class="flex items-center gap-2 mb-2">
-            <input readonly value="${window.location.origin}${link.url}" class="flex-1 border rounded px-2 py-1 text-sm bg-gray-50">
-            <button type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value); this.textContent='Copied!'" class="text-sm bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">Copy</button>
-          </div>`
-        ).join('');
-
-        document.getElementById('mainCard').innerHTML = `
-          <h2 class="text-xl font-bold mb-4 text-blue-600">Room Created</h2>
-          <p class="text-sm text-gray-600 mb-4">Share these one-time invite links:</p>
-          ${linksHtml || '<p class="text-gray-500 text-sm">No invite links generated.</p>'}
-          <a href="/burn-chat/room/${data.roomId}?creator=1&name=${encodeURIComponent(creatorName)}" class="mt-6 inline-block bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 text-sm">
-            Enter Room
-          </a>
-        `;
-      } catch (err) {
-        alert('Failed to create room');
-      }
-    });
-  </script>
+    const box = document.getElementById('result');
+    box.classList.remove('hidden');
+    const links = (result.inviteLinks || []).map(l => 
+      `<div class="flex gap-2 mb-2">
+        <input readonly value="${location.origin}${l.url}" class="flex-1 border rounded px-2 py-1 text-sm bg-gray-50">
+        <button type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied!'" class="text-sm bg-gray-200 px-3 py-1 rounded">Copy</button>
+      </div>`
+    ).join('');
+    box.innerHTML = `<p class="font-medium mb-2">Room created. Share the links below:</p>${links}`;
+  });
+</script>
 </body>
 </html>
