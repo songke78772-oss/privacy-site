@@ -8,7 +8,6 @@
   <script src="/burn-chat/socket.io/socket.io.js"></script>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col">
-  <!-- Header -->
   <header class="bg-white border-b px-4 py-3 flex justify-between items-center">
     <div>
       <h1 class="font-bold text-lg">Burn Chat</h1>
@@ -21,10 +20,8 @@
     </div>
   </header>
 
-  <!-- Messages -->
   <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
 
-  <!-- Input -->
   <div class="bg-white border-t p-3">
     <div class="flex gap-2">
       <input id="msgInput" type="text" placeholder="Type a message..." class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -37,7 +34,6 @@
     <p class="text-xs text-gray-400 mt-1">Images are compressed and disappear with the room.</p>
   </div>
 
-  <!-- Whiteboard Modal -->
   <div id="whiteboardModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl w-full max-w-5xl h-[85vh] flex flex-col">
       <div class="flex justify-between items-center p-3 border-b">
@@ -45,7 +41,6 @@
         <button id="closeWhiteboard" class="text-gray-500 hover:text-gray-800 text-xl">✕</button>
       </div>
 
-      <!-- Toolbar -->
       <div class="flex flex-wrap items-center gap-3 p-3 border-b bg-gray-50 text-sm">
         <div class="flex items-center gap-1">
           <span class="text-gray-500">Color:</span>
@@ -71,18 +66,18 @@
         </label>
         <div class="flex items-center gap-1">
           <span class="text-gray-500">Flags:</span>
-          <button class="flag-btn text-lg" data-color="#ef4444" title="Red flag">🚩</button>
-          <button class="flag-btn text-lg" data-color="#3b82f6" title="Blue flag">🚩</button>
-          <button class="flag-btn text-lg" data-color="#22c55e" title="Green flag">🚩</button>
-          <button class="flag-btn text-lg" data-color="#f59e0b" title="Yellow flag">🚩</button>
-          <button class="flag-btn text-lg" data-color="#a855f7" title="Purple flag">🚩</button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#ef4444" title="Red">🚩</button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#3b82f6" title="Blue">🚩</button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#22c55e" title="Green">🚩</button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#f59e0b" title="Yellow">🚩</button>
+          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center text-lg" data-color="#a855f7" title="Purple">🚩</button>
         </div>
         <button id="clearBoard" class="px-3 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200">Clear All</button>
       </div>
 
       <canvas id="whiteboard" class="flex-1 bg-white cursor-crosshair"></canvas>
       <div class="p-2 text-xs text-gray-500 text-center border-t">
-        Draw together in real time. All strokes and images are temporary and disappear with the room.
+        Draw together in real time. All content disappears with the room.
       </div>
     </div>
   </div>
@@ -213,20 +208,24 @@
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width;
       canvas.height = rect.height;
-      redrawHistory();
+      redrawAll();
     }
     window.addEventListener('resize', resizeCanvas);
 
-    function redrawHistory() {
+    function redrawAll() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      strokeHistory.forEach(stroke => {
-        ctx.beginPath();
-        ctx.moveTo(stroke.fromX, stroke.fromY);
-        ctx.lineTo(stroke.toX, stroke.toY);
-        ctx.strokeStyle = stroke.color;
-        ctx.lineWidth = stroke.size;
-        ctx.lineCap = 'round';
-        ctx.stroke();
+      strokeHistory.forEach(item => {
+        if (item.type === 'stroke') {
+          ctx.beginPath();
+          ctx.moveTo(item.fromX, item.fromY);
+          ctx.lineTo(item.toX, item.toY);
+          ctx.strokeStyle = item.color;
+          ctx.lineWidth = item.size;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        } else if (item.type === 'flag') {
+          drawFlag(item.x, item.y, item.color);
+        }
       });
     }
 
@@ -246,6 +245,7 @@
       const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
 
       const stroke = {
+        type: 'stroke',
         fromX: lastX, fromY: lastY,
         toX: x, toY: y,
         color: isEraser ? '#ffffff' : currentColor,
@@ -261,7 +261,7 @@
       ctx.stroke();
 
       strokeHistory.push(stroke);
-      if (strokeHistory.length > 500) strokeHistory.shift();
+      if (strokeHistory.length > 800) strokeHistory.shift();
 
       socket.emit('whiteboard-draw', { roomId, ...stroke });
       lastX = x;
@@ -306,14 +306,20 @@
 
     document.getElementById('undoBtn').addEventListener('click', () => {
       strokeHistory.pop();
-      redrawHistory();
+      redrawAll();
       socket.emit('whiteboard-clear', { roomId });
-      strokeHistory.forEach(s => socket.emit('whiteboard-draw', { roomId, ...s }));
+      strokeHistory.forEach(s => {
+        if (s.type === 'stroke') socket.emit('whiteboard-draw', { roomId, ...s });
+        else if (s.type === 'flag') socket.emit('whiteboard-flag', { roomId, ...s });
+      });
     });
 
     whiteboardBtn.addEventListener('click', () => {
       whiteboardModal.classList.remove('hidden');
-      setTimeout(resizeCanvas, 50);
+      setTimeout(() => {
+        resizeCanvas();
+        socket.emit('request-whiteboard', { roomId });
+      }, 50);
     });
     closeWhiteboard.addEventListener('click', () => whiteboardModal.classList.add('hidden'));
     document.getElementById('clearBoard').addEventListener('click', () => {
@@ -324,7 +330,6 @@
       }
     });
 
-    // Paste image on whiteboard (500KB)
     document.getElementById('boardImageInput').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -351,7 +356,7 @@
       e.target.value = '';
     });
 
-    // 插旗子
+    // 插旗
     document.querySelectorAll('.flag-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         flagMode = btn.dataset.color;
@@ -367,6 +372,8 @@
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
+      const flag = { type: 'flag', x, y, color: flagMode };
+      strokeHistory.push(flag);
       drawFlag(x, y, flagMode);
       socket.emit('whiteboard-flag', { roomId, x, y, color: flagMode });
       flagMode = null;
@@ -374,23 +381,27 @@
     });
 
     function drawFlag(x, y, color) {
+      // 旗杆
       ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + 22, y - 8);
-      ctx.lineTo(x + 22, y + 8);
+      ctx.moveTo(x, y - 18);
+      ctx.lineTo(x, y + 22);
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 旗面（三角形）
+      ctx.beginPath();
+      ctx.moveTo(x, y - 18);
+      ctx.lineTo(x + 28, y - 8);
+      ctx.lineTo(x, y + 2);
       ctx.closePath();
       ctx.fillStyle = color;
       ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(x, y - 12);
-      ctx.lineTo(x, y + 18);
-      ctx.strokeStyle = '#555';
-      ctx.lineWidth = 2;
-      ctx.stroke();
     }
 
     socket.on('whiteboard-draw', (stroke) => {
+      stroke.type = 'stroke';
+      strokeHistory.push(stroke);
       ctx.beginPath();
       ctx.moveTo(stroke.fromX, stroke.fromY);
       ctx.lineTo(stroke.toX, stroke.toY);
@@ -412,7 +423,14 @@
     });
 
     socket.on('whiteboard-flag', ({ x, y, color }) => {
+      strokeHistory.push({ type: 'flag', x, y, color });
       drawFlag(x, y, color);
+    });
+
+    // 请求历史（晚进房间的人）
+    socket.on('whiteboard-history', (history) => {
+      strokeHistory = history || [];
+      redrawAll();
     });
   </script>
 </body>
