@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
-  <div class="max-w-xl mx-auto py-8 px-4">
+  <div class="max-w-2xl mx-auto py-8 px-4">
     <h1 class="text-2xl font-bold text-blue-600">Burn Chat</h1>
     <p class="text-gray-600 text-sm mt-1">Temporary group chat. Messages disappear when the room ends.</p>
 
@@ -16,63 +16,84 @@
       All messages are deleted when the room expires or is dissolved. Nothing is stored permanently.
     </div>
 
-    <form id="createForm" class="bg-white rounded-xl shadow p-6 mt-6 space-y-4">
-      <div>
-        <label class="block text-sm font-medium mb-1">Max People</label>
-        <select id="maxPeople" class="w-full border rounded px-3 py-2">
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-          <option value="6">6</option>
-          <option value="7">7</option>
-          <option value="8">8</option>
-        </select>
+    <form id="createForm" class="mt-6">
+      <!-- 横排输入 -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Max People</label>
+          <select id="maxPeople" class="w-full border rounded px-3 py-2 text-sm">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Duration</label>
+          <select id="hours" class="w-full border rounded px-3 py-2 text-sm">
+            <option value="1">1 hour</option>
+            <option value="2">2 hours</option>
+            <option value="4">4 hours</option>
+            <option value="8">8 hours</option>
+            <option value="12">12 hours</option>
+            <option value="24">24 hours</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Name Category</label>
+          <select id="category" class="w-full border rounded px-3 py-2 text-sm">
+            <option value="animal">Animals</option>
+            <option value="fruit">Fruits</option>
+            <option value="vegetable">Vegetables</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Your Name</label>
+          <select id="creatorName" class="w-full border rounded px-3 py-2 text-sm"></select>
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium mb-1">Duration</label>
-        <select id="hours" class="w-full border rounded px-3 py-2">
-          <option value="1">1 hour</option>
-          <option value="2">2 hours</option>
-          <option value="4">4 hours</option>
-          <option value="8">8 hours</option>
-          <option value="12">12 hours</option>
-          <option value="24">24 hours</option>
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium mb-1">Name Category</label>
-        <select id="category" class="w-full border rounded px-3 py-2">
-          <option value="animal">Animals</option>
-          <option value="fruit">Fruits</option>
-          <option value="vegetable">Vegetables</option>
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium mb-1">Your Name</label>
-        <select id="creatorName" class="w-full border rounded px-3 py-2"></select>
-      </div>
-
-      <div>
+      <div class="mb-4">
         <label class="block text-sm font-medium mb-1">Password (optional)</label>
-        <input type="text" id="password" placeholder="Leave empty for no password" class="w-full border rounded px-3 py-2">
+        <input type="text" id="password" placeholder="Leave empty for no password" class="w-full sm:w-64 border rounded px-3 py-2 text-sm">
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 mb-4">
         <input type="checkbox" id="deepEncrypt" class="rounded">
         <label for="deepEncrypt" class="text-sm">Deep encrypt (client-side encryption)</label>
       </div>
 
-      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+      <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded text-sm hover:bg-blue-700">
         Create Room
       </button>
     </form>
 
     <div id="result" class="hidden mt-6 bg-white rounded-xl shadow p-6"></div>
     <div id="error" class="hidden mt-4 text-red-600 text-sm"></div>
+
+    <!-- 说明区域 -->
+    <div class="mt-8 border-t pt-6 text-sm text-gray-600 space-y-5">
+      <div>
+        <p class="font-medium text-gray-800 mb-1">How to use</p>
+        <p>Choose the number of people, duration, and your name, then click Create Room. Share the generated invite links with others. Each link can only be used once.</p>
+      </div>
+      <div>
+        <p class="font-medium text-red-600 mb-1">Privacy Notice</p>
+        <p class="text-red-600">Messages are not stored permanently. When the room expires or is dissolved by the owner, all messages are permanently deleted from the server.</p>
+      </div>
+      <div>
+        <p class="font-medium text-gray-800 mb-1">Limitations</p>
+        <ul class="list-disc list-inside space-y-1">
+          <li>Maximum 8 people per room</li>
+          <li>Room duration is limited to 24 hours</li>
+          <li>Once the room ends, messages cannot be recovered</li>
+          <li>Deep encrypt option encrypts messages in the browser before sending</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <script>
