@@ -165,7 +165,11 @@ io.on('connection', (socket) => {
     socket.isCreator = isCreator;
 
     io.to(roomId).emit('system', `${displayName} has joined the room`);
-    socket.emit('joined', { name: displayName, expireAt: room.expireAt });
+    socket.emit('joined', { 
+      name: displayName, 
+      expireAt: room.expireAt,
+      maxPeople: room.maxPeople 
+    });
     socket.emit('history', room.messages.slice(-100));
   });
 
