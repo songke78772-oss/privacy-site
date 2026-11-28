@@ -1,447 +1,259 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Burn Chat Room</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/burn-chat/socket.io/socket.io.js"></script>
-</head>
-<body class="bg-gray-100 h-screen flex flex-col">
-  <header class="bg-white border-b px-4 py-3 flex justify-between items-center">
-    <div>
-      <h1 class="font-bold text-lg">Burn Chat</h1>
-      <p id="roomInfo" class="text-sm text-gray-500">Connecting...</p>
-    </div>
-    <div class="flex items-center gap-3">
-      <div id="countdown" class="text-sm font-mono text-orange-600"></div>
-      <button id="whiteboardBtn" class="px-3 py-1.5 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">Whiteboard</button>
-      <button id="dissolveBtn" class="hidden px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700">Dissolve Room</button>
-    </div>
-  </header>
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+const crypto = require('crypto');
 
-  <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+const BASE_PATH = process.env.BASE_PATH || '/burn-chat';
+const PORT = process.env.PORT || 3005;
 
-  <div class="bg-white border-t p-3">
-    <div class="flex gap-2">
-      <input id="msgInput" type="text" placeholder="Type a message..." class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <label class="px-3 py-2 border rounded cursor-pointer hover:bg-gray-50 text-sm flex items-center">
-        📷
-        <input type="file" id="imageInput" accept="image/*" class="hidden">
-      </label>
-      <button id="sendBtn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Send</button>
-    </div>
-    <p class="text-xs text-gray-400 mt-1">Images are compressed and disappear with the room.</p>
-  </div>
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" },
+  path: `${BASE_PATH}/socket.io`
+});
 
-  <div id="whiteboardModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl w-full max-w-5xl h-[85vh] flex flex-col">
-      <div class="flex justify-between items-center p-3 border-b">
-        <h2 class="font-bold">Shared Whiteboard</h2>
-        <button id="closeWhiteboard" class="text-gray-500 hover:text-gray-800 text-xl">✕</button>
-      </div>
+app.use(express.json());
+app.use(BASE_PATH, express.static(path.join(__dirname, 'public')));
 
-      <div class="flex flex-wrap items-center gap-3 p-3 border-b bg-gray-50 text-sm">
-        <div class="flex items-center gap-1">
-          <span class="text-gray-500">Color:</span>
-          <button class="w-6 h-6 rounded-full border-2 border-gray-800 color-btn" data-color="#2563eb" style="background:#2563eb"></button>
-          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#dc2626" style="background:#dc2626"></button>
-          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#16a34a" style="background:#16a34a"></button>
-          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#000000" style="background:#000"></button>
-          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#f59e0b" style="background:#f59e0b"></button>
-          <button class="w-6 h-6 rounded-full border-2 border-transparent color-btn" data-color="#9333ea" style="background:#9333ea"></button>
-        </div>
-        <div class="flex items-center gap-1">
-          <span class="text-gray-500">Size:</span>
-          <button class="size-btn px-2 py-0.5 rounded bg-blue-100 text-blue-700" data-size="2">S</button>
-          <button class="size-btn px-2 py-0.5 rounded" data-size="4">M</button>
-          <button class="size-btn px-2 py-0.5 rounded" data-size="8">L</button>
-          <button class="size-btn px-2 py-0.5 rounded" data-size="16">XL</button>
-        </div>
-        <button id="eraserBtn" class="px-3 py-1 rounded border hover:bg-gray-100">Eraser</button>
-        <button id="undoBtn" class="px-3 py-1 rounded border hover:bg-gray-100">Undo</button>
-        <label class="px-3 py-1 rounded border hover:bg-gray-100 cursor-pointer">
-          Paste Image
-          <input type="file" id="boardImageInput" accept="image/*" class="hidden">
-        </label>
-        <div class="flex items-center gap-1">
-          <span class="text-gray-500">Flags:</span>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#ef4444" title="Red">
-            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#ef4444"></div>
-          </button>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#3b82f6" title="Blue">
-            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#3b82f6"></div>
-          </button>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#22c55e" title="Green">
-            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#22c55e"></div>
-          </button>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#f59e0b" title="Yellow">
-            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#f59e0b"></div>
-          </button>
-          <button class="flag-btn w-7 h-7 rounded border flex items-center justify-center" data-color="#a855f7" title="Purple">
-            <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[14px]" style="border-bottom-color:#a855f7"></div>
-          </button>
-        </div>
-        <button id="clearBoard" class="px-3 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200">Clear All</button>
-      </div>
+app.get(BASE_PATH, (req, res) => res.sendFile(path.join(__dirname, 'public', 'create.html')));
+app.get(`${BASE_PATH}/`, (req, res) => res.sendFile(path.join(__dirname, 'public', 'create.html')));
 
-      <canvas id="whiteboard" class="flex-1 bg-white cursor-crosshair"></canvas>
-      <div class="p-2 text-xs text-gray-500 text-center border-t">
-        Draw together in real time. All content disappears with the room.
-      </div>
-    </div>
-  </div>
+const rooms = new Map();
 
-  <script>
-    const socket = io({ path: '/burn-chat/socket.io' });
-    const roomId = location.pathname.split('/').pop();
-    const params = new URLSearchParams(location.search);
-    const isCreator = params.get('creator') === '1';
+const namePools = {
+  animal: ['Lion', 'Tiger', 'Bear', 'Wolf', 'Fox', 'Deer', 'Eagle', 'Owl', 'Rabbit', 'Panda', 'Koala', 'Dolphin'],
+  fruit: ['Apple', 'Banana', 'Orange', 'Grape', 'Mango', 'Peach', 'Cherry', 'Lemon', 'Kiwi', 'Melon', 'Pear', 'Plum'],
+  vegetable: ['Carrot', 'Potato', 'Tomato', 'Onion', 'Cabbage', 'Broccoli', 'Spinach', 'Pepper', 'Corn', 'Bean', 'Pea', 'Radish']
+};
 
-    const messagesEl = document.getElementById('messages');
-    const msgInput = document.getElementById('msgInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const imageInput = document.getElementById('imageInput');
-    const countdownEl = document.getElementById('countdown');
-    const dissolveBtn = document.getElementById('dissolveBtn');
-    const whiteboardBtn = document.getElementById('whiteboardBtn');
-    const whiteboardModal = document.getElementById('whiteboardModal');
-    const closeWhiteboard = document.getElementById('closeWhiteboard');
-    const canvas = document.getElementById('whiteboard');
+function generateId() {
+  return crypto.randomBytes(8).toString('hex');
+}
 
-    let myName = '';
-    let expireAt = 0;
+function getAvailableNames(category, usedNames) {
+  const pool = namePools[category] || namePools.animal;
+  return pool.filter(name => !usedNames.has(name));
+}
 
-    socket.emit('join-room', { roomId, isCreator });
+app.post(`${BASE_PATH}/api/create-room`, (req, res) => {
+  const { maxPeople, hours, category, creatorName, deepEncrypt, password } = req.body;
 
-    socket.on('joined', (data) => {
-      myName = data.name;
-      expireAt = data.expireAt;
-      document.getElementById('roomInfo').textContent = `You are ${myName} · Room expires soon`;
-      if (data.isCreator) dissolveBtn.classList.remove('hidden');
-      updateCountdown();
+  if (!maxPeople || maxPeople < 2 || maxPeople > 8) {
+    return res.status(400).json({ error: 'Participants must be between 2 and 8' });
+  }
+  const allowedHours = [1, 2, 4, 8, 12, 24];
+  if (!allowedHours.includes(Number(hours))) {
+    return res.status(400).json({ error: 'Invalid duration' });
+  }
+  if (!namePools[category]) {
+    return res.status(400).json({ error: 'Invalid name category' });
+  }
+  if (!creatorName || !namePools[category].includes(creatorName)) {
+    return res.status(400).json({ error: 'Please select a name from the category' });
+  }
+
+  const roomId = generateId();
+  const expireAt = Date.now() + Number(hours) * 60 * 60 * 1000;
+
+  const inviteLinks = [];
+  for (let i = 0; i < maxPeople - 1; i++) {
+    const token = generateId();
+    inviteLinks.push({
+      token,
+      url: `${BASE_PATH}/join/${roomId}/${token}`
     });
+  }
 
-    socket.on('system', (text) => addMessage('System', text, true));
-    socket.on('history', (msgs) => msgs.forEach(m => addMessage(m.name, m.ciphertext, false, m.isImage)));
-    socket.on('message', (m) => addMessage(m.name, m.ciphertext, false, m.isImage));
-    socket.on('error', (err) => alert(err));
+  rooms.set(roomId, {
+    id: roomId,
+    maxPeople: Number(maxPeople),
+    hours: Number(hours),
+    category,
+    creatorName,
+    deepEncrypt: !!deepEncrypt,
+    password: deepEncrypt ? password : null,
+    expireAt,
+    users: new Map(),
+    messages: [],
+    usedTokens: new Set(),
+    availableTokens: new Set(inviteLinks.map(l => l.token)),
+    dissolved: false
+  });
 
-    function addMessage(name, text, isSystem = false, isImage = false) {
-      const div = document.createElement('div');
-      div.className = isSystem ? 'text-center text-gray-500 text-sm' : 'flex';
-      if (!isSystem) {
-        const bubble = document.createElement('div');
-        bubble.className = 'max-w-xs md:max-w-md px-3 py-2 rounded-lg ' + (name === myName ? 'bg-blue-600 text-white ml-auto' : 'bg-white border');
-        bubble.innerHTML = `<div class="text-xs opacity-70 mb-1">${name}</div>`;
-        if (isImage) {
-          const img = document.createElement('img');
-          img.src = text;
-          img.className = 'max-w-full rounded-lg mt-1 cursor-pointer hover:opacity-90';
-          img.style.maxHeight = '200px';
-          img.onclick = () => {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4';
-            modal.onclick = () => modal.remove();
-            const full = document.createElement('img');
-            full.src = text;
-            full.className = 'max-w-full max-h-full object-contain';
-            full.onclick = (e) => e.stopPropagation();
-            modal.appendChild(full);
-            document.body.appendChild(modal);
-          };
-          bubble.appendChild(img);
-        } else {
-          bubble.innerHTML += `<div>${escapeHtml(text)}</div>`;
-        }
-        div.appendChild(bubble);
-      } else {
-        div.textContent = text;
+  setTimeout(() => {
+    if (rooms.has(roomId)) {
+      io.to(roomId).emit('system', 'Room session has expired; room automatically disbanded.');
+      rooms.delete(roomId);
+    }
+  }, Number(hours) * 60 * 60 * 1000);
+
+  res.json({
+    roomId,
+    creatorName,
+    inviteLinks,
+    expireAt
+  });
+});
+
+app.post(`${BASE_PATH}/api/join/:roomId/:token`, (req, res) => {
+  const { roomId, token } = req.params;
+  const { password } = req.body;
+  const room = rooms.get(roomId);
+
+  if (!room || room.dissolved || room.expireAt < Date.now()) {
+    return res.status(404).json({ error: 'The room does not exist or has expired.' });
+  }
+  if (!room.availableTokens.has(token)) {
+    return res.status(403).json({ error: 'The invitation link is invalid or has already been used.' });
+  }
+  if (room.deepEncrypt && room.password !== password) {
+    return res.status(401).json({ error: 'Incorrect password' });
+  }
+  if (room.users.size >= room.maxPeople) {
+    return res.status(403).json({ error: 'This meeting room is already full.' });
+  }
+
+  room.availableTokens.delete(token);
+  room.usedTokens.add(token);
+
+  res.json({ ok: true, roomId, category: room.category });
+});
+
+app.get(`${BASE_PATH}/join/:roomId/:token`, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'join.html'));
+});
+
+app.get(`${BASE_PATH}/room/:roomId`, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'room.html'));
+  });
+  
+  io.on('connection', (socket) => {
+  // 简单内存历史（房间解散时自动清空）
+const boardHistory = new Map();
+
+socket.on('whiteboard-draw', (data) => {
+  if (!boardHistory.has(data.roomId)) boardHistory.set(data.roomId, []);
+  boardHistory.get(data.roomId).push(data);
+  socket.to(data.roomId).emit('whiteboard-draw', data);
+});
+
+socket.on('whiteboard-flag', (data) => {
+  if (!boardHistory.has(data.roomId)) boardHistory.set(data.roomId, []);
+  boardHistory.get(data.roomId).push({ type: 'flag', ...data });
+  socket.to(data.roomId).emit('whiteboard-flag', data);
+});
+
+socket.on('whiteboard-clear', (data) => {
+  boardHistory.set(data.roomId, []);
+  socket.to(data.roomId).emit('whiteboard-clear');
+});
+
+socket.on('whiteboard-image', (data) => {
+  socket.to(data.roomId).emit('whiteboard-image', data);
+});
+
+socket.on('request-whiteboard', ({ roomId }) => {
+  const hist = boardHistory.get(roomId) || [];
+  socket.emit('whiteboard-history', hist);
+});
+
+    
+    // 白板画笔
+  socket.on('whiteboard-draw', (data) => {
+    socket.to(data.roomId).emit('whiteboard-draw', data);
+  });
+  
+  // 白板清除
+  socket.on('whiteboard-clear', (data) => {
+    socket.to(data.roomId).emit('whiteboard-clear', data);
+  });
+  
+  // 白板贴图
+  socket.on('whiteboard-image', (data) => {
+    socket.to(data.roomId).emit('whiteboard-image', data);
+  });
+  
+  socket.on('join-room', ({ roomId, isCreator, name }) => {
+    const room = rooms.get(roomId);
+    if (!room || room.dissolved) {
+      return socket.emit('error', 'Room does not exist');
+    }
+
+    let displayName = name;
+    if (!isCreator) {
+      const available = getAvailableNames(room.category, new Set([...room.users.values(), room.creatorName]));
+      if (available.length === 0) {
+        return socket.emit('error', 'No name available');
       }
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      displayName = available[Math.floor(Math.random() * available.length)];
+    } else {
+      displayName = room.creatorName;
     }
 
-    function escapeHtml(str) {
-      return str.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    room.users.set(socket.id, displayName);
+    socket.join(roomId);
+    socket.roomId = roomId;
+    socket.isCreator = !!isCreator;
+
+    io.to(roomId).emit('system', `${displayName} has joined the room`);
+    socket.emit('joined', { 
+      name: displayName, 
+      expireAt: room.expireAt,
+      maxPeople: room.maxPeople,
+      creatorName: room.creatorName,
+      isCreator: !!isCreator
+    });
+    socket.emit('history', room.messages.slice(-100));
+  });
+
+  socket.on('message', ({ roomId, ciphertext, isImage }) => {
+    const room = rooms.get(roomId);
+    if (!room || !room.users.has(socket.id)) return;
+
+    const msg = {
+      name: room.users.get(socket.id),
+      ciphertext,
+      isImage: !!isImage,
+      time: Date.now()
+    };
+    room.messages.push(msg);
+    if (room.messages.length > 300) room.messages.shift();
+
+    io.to(roomId).emit('message', msg);
+  });
+
+  socket.on('whiteboard-draw', (data) => {
+    socket.to(data.roomId).emit('whiteboard-draw', data);
+  });
+
+  socket.on('whiteboard-clear', (data) => {
+    socket.to(data.roomId).emit('whiteboard-clear');
+  });
+
+  socket.on('dissolve', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (room && socket.isCreator) {
+      room.dissolved = true;
+      io.to(roomId).emit('system', 'The room has been disbanded by its creator.');
+      rooms.delete(roomId);
+      io.in(roomId).disconnectSockets();
     }
+  });
 
-    function sendMessage(text, isImage = false) {
-      if (!text.trim()) return;
-      socket.emit('message', { roomId, ciphertext: text, isImage });
-      msgInput.value = '';
+  socket.on('disconnect', () => {
+    if (!socket.roomId) return;
+    const room = rooms.get(socket.roomId);
+    if (room && room.users.has(socket.id)) {
+      const name = room.users.get(socket.id);
+      room.users.delete(socket.id);
+      io.to(socket.roomId).emit('system', `${name} has left the room`);
     }
+  });
+});
 
-    sendBtn.addEventListener('click', () => sendMessage(msgInput.value));
-    msgInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage(msgInput.value);
-    });
-
-    imageInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (file.size > 500 * 1024) {
-        alert('Image must be under 500KB');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => sendMessage(reader.result, true);
-      reader.readAsDataURL(file);
-      e.target.value = '';
-    });
-
-    function updateCountdown() {
-      const left = Math.max(0, expireAt - Date.now());
-      const h = Math.floor(left / 3600000);
-      const m = Math.floor((left % 3600000) / 60000);
-      countdownEl.textContent = `${h}h ${m}m left`;
-      if (left > 0) setTimeout(updateCountdown, 30000);
-    }
-
-    dissolveBtn.addEventListener('click', () => {
-      if (confirm('Dissolve this room for everyone?')) {
-        socket.emit('dissolve', { roomId });
-      }
-    });
-
-    // ========== Whiteboard ==========
-    const ctx = canvas.getContext('2d');
-    let drawing = false;
-    let lastX = 0, lastY = 0;
-    let currentColor = '#2563eb';
-    let currentSize = 2;
-    let isEraser = false;
-    let strokeHistory = [];
-    let flagMode = null;
-
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      redrawAll();
-    }
-    window.addEventListener('resize', resizeCanvas);
-
-    function redrawAll() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      strokeHistory.forEach(item => {
-        if (item.type === 'stroke') {
-          ctx.beginPath();
-          ctx.moveTo(item.fromX, item.fromY);
-          ctx.lineTo(item.toX, item.toY);
-          ctx.strokeStyle = item.color;
-          ctx.lineWidth = item.size;
-          ctx.lineCap = 'round';
-          ctx.stroke();
-        } else if (item.type === 'flag') {
-          drawFlag(item.x, item.y, item.color);
-        }
-      });
-    }
-
-    function startDraw(e) {
-      if (flagMode) return;
-      drawing = true;
-      const rect = canvas.getBoundingClientRect();
-      lastX = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
-      lastY = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
-    }
-
-    function draw(e) {
-      if (!drawing || flagMode) return;
-      e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
-      const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
-
-      const stroke = {
-        type: 'stroke',
-        fromX: lastX, fromY: lastY,
-        toX: x, toY: y,
-        color: isEraser ? '#ffffff' : currentColor,
-        size: isEraser ? currentSize * 3 : currentSize
-      };
-
-      ctx.beginPath();
-      ctx.moveTo(stroke.fromX, stroke.fromY);
-      ctx.lineTo(stroke.toX, stroke.toY);
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-
-      strokeHistory.push(stroke);
-      if (strokeHistory.length > 800) strokeHistory.shift();
-
-      socket.emit('whiteboard-draw', { roomId, ...stroke });
-      lastX = x;
-      lastY = y;
-    }
-
-    function stopDraw() { drawing = false; }
-
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDraw);
-    canvas.addEventListener('mouseout', stopDraw);
-    canvas.addEventListener('touchstart', startDraw, { passive: false });
-    canvas.addEventListener('touchmove', draw, { passive: false });
-    canvas.addEventListener('touchend', stopDraw);
-
-    document.querySelectorAll('.color-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentColor = btn.dataset.color;
-        isEraser = false;
-        flagMode = null;
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('border-gray-800'));
-        document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('bg-yellow-200'));
-        btn.classList.add('border-gray-800');
-      });
-    });
-
-    document.querySelectorAll('.size-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentSize = Number(btn.dataset.size);
-        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('bg-blue-100', 'text-blue-700'));
-        btn.classList.add('bg-blue-100', 'text-blue-700');
-      });
-    });
-
-    document.getElementById('eraserBtn').addEventListener('click', () => {
-      isEraser = !isEraser;
-      flagMode = null;
-      document.getElementById('eraserBtn').classList.toggle('bg-yellow-200', isEraser);
-      document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('bg-yellow-200'));
-    });
-
-    document.getElementById('undoBtn').addEventListener('click', () => {
-      strokeHistory.pop();
-      redrawAll();
-      socket.emit('whiteboard-clear', { roomId });
-      strokeHistory.forEach(s => {
-        if (s.type === 'stroke') socket.emit('whiteboard-draw', { roomId, ...s });
-        else if (s.type === 'flag') socket.emit('whiteboard-flag', { roomId, ...s });
-      });
-    });
-
-    whiteboardBtn.addEventListener('click', () => {
-      whiteboardModal.classList.remove('hidden');
-      setTimeout(() => {
-        resizeCanvas();
-        strokeHistory = [];
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        socket.emit('request-whiteboard', { roomId });
-      }, 80);
-    });
-
-    closeWhiteboard.addEventListener('click', () => whiteboardModal.classList.add('hidden'));
-
-    document.getElementById('clearBoard').addEventListener('click', () => {
-      if (confirm('Clear the whiteboard for everyone?')) {
-        strokeHistory = [];
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        socket.emit('whiteboard-clear', { roomId });
-      }
-    });
-
-    document.getElementById('boardImageInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (file.size > 500 * 1024) {
-        alert('Image must be under 500KB');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        const img = new Image();
-        img.onload = () => {
-          const maxW = 400;
-          const scale = Math.min(1, maxW / img.width);
-          const w = img.width * scale;
-          const h = img.height * scale;
-          const x = (canvas.width - w) / 2;
-          const y = (canvas.height - h) / 2;
-          ctx.drawImage(img, x, y, w, h);
-          socket.emit('whiteboard-image', { roomId, dataUrl: reader.result, x, y, w, h });
-        };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
-    });
-
-    document.querySelectorAll('.flag-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        flagMode = btn.dataset.color;
-        isEraser = false;
-        document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('bg-yellow-200'));
-        btn.classList.add('bg-yellow-200');
-      });
-    });
-
-    canvas.addEventListener('click', (e) => {
-      if (!flagMode) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      const flag = { type: 'flag', x, y, color: flagMode };
-      strokeHistory.push(flag);
-      drawFlag(x, y, flagMode);
-      socket.emit('whiteboard-flag', { roomId, x, y, color: flagMode });
-      flagMode = null;
-      document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('bg-yellow-200'));
-    });
-
-    function drawFlag(x, y, color) {
-      ctx.beginPath();
-      ctx.moveTo(x, y - 18);
-      ctx.lineTo(x, y + 22);
-      ctx.strokeStyle = '#444';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(x, y - 18);
-      ctx.lineTo(x + 28, y - 8);
-      ctx.lineTo(x, y + 2);
-      ctx.closePath();
-      ctx.fillStyle = color;
-      ctx.fill();
-    }
-
-    socket.on('whiteboard-draw', (stroke) => {
-      stroke.type = 'stroke';
-      strokeHistory.push(stroke);
-      ctx.beginPath();
-      ctx.moveTo(stroke.fromX, stroke.fromY);
-      ctx.lineTo(stroke.toX, stroke.toY);
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-    });
-
-    socket.on('whiteboard-clear', () => {
-      strokeHistory = [];
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    });
-
-    socket.on('whiteboard-image', ({ dataUrl, x, y, w, h }) => {
-      const img = new Image();
-      img.onload = () => ctx.drawImage(img, x, y, w, h);
-      img.src = dataUrl;
-    });
-
-    socket.on('whiteboard-flag', ({ x, y, color }) => {
-      strokeHistory.push({ type: 'flag', x, y, color });
-      drawFlag(x, y, color);
-    });
-
-    socket.on('whiteboard-history', (history) => {
-      strokeHistory = Array.isArray(history) ? history : [];
-      redrawAll();
-    });
-  </script>
-</body>
-</html>
+server.listen(PORT, () => {
+  console.log(`Burn Chat running on port ${PORT}`);
+  console.log(`Base path: ${BASE_PATH}`);
+});
