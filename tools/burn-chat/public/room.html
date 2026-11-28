@@ -328,10 +328,8 @@
       whiteboardModal.classList.remove('hidden');
       setTimeout(() => {
         resizeCanvas();
-        strokeHistory = [];
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         socket.emit('request-whiteboard', { roomId });
-      }, 80);
+      }, 100);
     });
 
     closeWhiteboard.addEventListener('click', () => whiteboardModal.classList.add('hidden'));
@@ -413,6 +411,7 @@
     socket.on('whiteboard-draw', (stroke) => {
       stroke.type = 'stroke';
       strokeHistory.push(stroke);
+      if (whiteboardModal.classList.contains('hidden')) return;
       ctx.beginPath();
       ctx.moveTo(stroke.fromX, stroke.fromY);
       ctx.lineTo(stroke.toX, stroke.toY);
@@ -424,10 +423,13 @@
 
     socket.on('whiteboard-clear', () => {
       strokeHistory = [];
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!whiteboardModal.classList.contains('hidden')) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     });
 
     socket.on('whiteboard-image', ({ dataUrl, x, y, w, h }) => {
+      if (whiteboardModal.classList.contains('hidden')) return;
       const img = new Image();
       img.onload = () => ctx.drawImage(img, x, y, w, h);
       img.src = dataUrl;
@@ -435,12 +437,15 @@
 
     socket.on('whiteboard-flag', ({ x, y, color }) => {
       strokeHistory.push({ type: 'flag', x, y, color });
+      if (whiteboardModal.classList.contains('hidden')) return;
       drawFlag(x, y, color);
     });
 
     socket.on('whiteboard-history', (history) => {
       strokeHistory = Array.isArray(history) ? history : [];
-      redrawAll();
+      if (!whiteboardModal.classList.contains('hidden')) {
+        redrawAll();
+      }
     });
   </script>
 </body>
