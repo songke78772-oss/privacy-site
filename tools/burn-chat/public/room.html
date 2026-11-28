@@ -121,11 +121,12 @@
       socket.emit('join-room', { roomId, isCreator, name: creatorName });
     });
 
-    socket.on('joined', ({ name, expireAt: exp, maxPeople: mp }) => {
+    socket.on('joined', ({ name, expireAt: exp, maxPeople: mp, creatorName: cName }) => {
       expireAt = exp;
-      maxPeople = mp || 5;
-      ownerNameEl.textContent = isCreator ? name : (creatorName || 'Owner');
-      initSlots(isCreator ? name : (creatorName || 'Owner'));
+      maxPeople = mp || 2;
+      const owner = cName || creatorName || 'Owner';
+      ownerNameEl.textContent = owner;
+      initSlots(owner);
       if (isCreator) dissolveBtn.classList.remove('hidden');
       updateTimer();
     });
