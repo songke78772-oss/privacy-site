@@ -158,9 +158,18 @@ io.on('connection', (socket) => {
   });
 
   socket.on('whiteboard-image', (data) => {
-    if (!data || !data.roomId) return;
-    socket.to(data.roomId).emit('whiteboard-image', data);
+  if (!data || !data.roomId) return;
+  if (!boardHistory.has(data.roomId)) boardHistory.set(data.roomId, []);
+  boardHistory.get(data.roomId).push({
+    type: 'image',
+    dataUrl: data.dataUrl,
+    x: data.x,
+    y: data.y,
+    w: data.w,
+    h: data.h
   });
+  socket.to(data.roomId).emit('whiteboard-image', data);
+});
 
   socket.on('request-whiteboard', ({ roomId }) => {
     const hist = boardHistory.get(roomId) || [];
